@@ -47,6 +47,26 @@ export function playNotificationSound() {
   }
 }
 
+
+// Message sent sound — short subtle click
+export function playMessageSentSound() {
+  try {
+    const ctx = new AudioContext();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(900, now);
+    osc.frequency.exponentialRampToValueAtTime(600, now + 0.08);
+    gain.gain.setValueAtTime(0.06, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.12);
+  } catch (e) { /* silent fail */ }
+}
+
 // Muted chats stored in localStorage
 const MUTED_KEY = 'vortex_muted_chats';
 

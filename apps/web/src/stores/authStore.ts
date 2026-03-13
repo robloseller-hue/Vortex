@@ -16,7 +16,7 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
-  token: localStorage.getItem('vortex_token'),
+  token: localStorage.getItem('zync_token'),
   user: null,
   isLoading: true,
   error: null,
@@ -25,7 +25,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       set({ error: null, isLoading: true });
       const { token, user } = await api.login(username, password);
-      localStorage.setItem('vortex_token', token);
+      localStorage.setItem('zync_token', token);
       api.setToken(token);
       connectSocket(token);
       set({ token, user, isLoading: false });
@@ -40,7 +40,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       set({ error: null, isLoading: true });
       const { token, user } = await api.register(username, displayName, password, bio);
-      localStorage.setItem('vortex_token', token);
+      localStorage.setItem('zync_token', token);
       api.setToken(token);
       connectSocket(token);
       set({ token, user, isLoading: false });
@@ -52,7 +52,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: () => {
-    localStorage.removeItem('vortex_token');
+    localStorage.removeItem('zync_token');
     api.setToken(null);
     disconnectSocket();
     set({ token: null, user: null });
@@ -87,7 +87,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
     }
     console.warn('checkAuth failed:', lastError);
-    localStorage.removeItem('vortex_token');
+    localStorage.removeItem('zync_token');
     set({ token: null, user: null, isLoading: false });
   },
 

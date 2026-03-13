@@ -5,6 +5,8 @@ import AuthPage from './pages/AuthPage';
 import ChatPage from './pages/ChatPage';
 import AdminPage from './pages/AdminPage';
 
+const ADMIN_USERS = ['amebo4ka', 'abob4ek'];
+
 export default function App() {
   const { token, user, checkAuth, isLoading } = useAuthStore();
   const [adminOpen, setAdminOpen] = useState(false);
@@ -30,6 +32,8 @@ export default function App() {
     );
   }
 
+  const isAdmin = user && ADMIN_USERS.includes(user.username);
+
   return (
     <>
       <AnimatePresence mode="wait">
@@ -39,7 +43,7 @@ export default function App() {
           <AuthPage key="auth" />
         )}
       </AnimatePresence>
-      {adminOpen && user?.username === 'amebo4ka' && (
+      {adminOpen && isAdmin && (
         <AdminPage onClose={() => setAdminOpen(false)} />
       )}
     </>

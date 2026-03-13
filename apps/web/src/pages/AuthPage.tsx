@@ -66,8 +66,8 @@ export default function AuthPage() {
               transition={{ duration: 0.6, type: 'spring', bounce: 0.4 }}
             >
               <img
-                src="/logo.png"
-                alt="Vortex"
+                src="/zync.svg"
+                alt="Zync"
                 className="w-20 h-20 rounded-2xl shadow-lg shadow-vortex-500/30 object-cover"
               />
             </motion.div>

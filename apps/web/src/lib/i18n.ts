@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 export type Lang = 'ru' | 'en';
 
-const LANG_KEY = 'vortex_language';
+const LANG_KEY = 'zync_language';
 
 const translations = {
   ru: {
@@ -168,7 +168,7 @@ const translations = {
     removeAvatar: 'Удалить аватар',
     namePlaceholder: 'Имя',
     notSpecified: 'Не указано',
-    onVortexSince: 'На Vortex с',
+    onVortexSince: 'На Zync с',
     cancel: 'Отмена',
     confirm: 'Подтвердить',
     save: 'Сохранить',
@@ -412,7 +412,7 @@ const translations = {
     removeAvatar: 'Remove avatar',
     namePlaceholder: 'Name',
     notSpecified: 'Not specified',
-    onVortexSince: 'On Vortex since',
+    onVortexSince: 'On Zync since',
     cancel: 'Cancel',
     confirm: 'Confirm',
     save: 'Save',

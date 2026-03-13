@@ -24,6 +24,7 @@ import { getSocket } from '../lib/socket';
 import { useLang } from '../lib/i18n';
 import { AUDIO_EXTENSIONS, MAX_FILE_SIZE } from '../lib/types';
 import EmojiPicker from './EmojiPicker';
+import { playMessageSentSound } from '../lib/sounds';
 
 interface Attachment {
   file: File;
@@ -223,6 +224,7 @@ export default function MessageInput({ chatId }: MessageInputProps) {
         ...(scheduledAt ? { scheduledAt } : {}),
       });
       setReplyTo(null);
+      playMessageSentSound();
     }
 
     setText('');

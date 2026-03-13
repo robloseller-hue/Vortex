@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react'; 
+import React, { useState, useEffect, useCallback } from 'react';
 
-const API = '/api/admin';  
+const API = '/api/admin';
 
 function authHeaders() {
-  const token = localStorage.getItem('vortex_token'); 
+  const token = localStorage.getItem('zync_token');
   return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
-}    
+}
 async function apiFetch(url: string, opts: RequestInit = {}) {
   const res = await fetch(url, { headers: authHeaders(), ...opts });
   if (!res.ok) throw new Error(await res.text());
@@ -568,7 +568,7 @@ export default function AdminPage({ onClose }: { onClose: () => void }) {
         <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 shrink-0 bg-zinc-900/50">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-vortex-500 to-purple-600 flex items-center justify-center text-white"><I.Shield /></div>
-            <div><h1 className="text-white font-semibold leading-tight">Админ панель</h1><p className="text-zinc-600 text-xs">Vortex Messenger</p></div>
+            <div><h1 className="text-white font-semibold leading-tight">Админ панель</h1><p className="text-zinc-600 text-xs">Zync Messenger</p></div>
           </div>
           <button onClick={onClose} className="text-zinc-500 hover:text-white w-8 h-8 flex items-center justify-center rounded-xl hover:bg-zinc-800 transition-colors"><I.Close /></button>
         </div>
