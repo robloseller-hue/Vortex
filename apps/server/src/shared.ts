@@ -19,6 +19,7 @@ export const USER_SELECT = {
   lastSeen: true,
   createdAt: true,
   hideStoryViews: true,
+  isVerified: true,
 } as const;
 
 /** Compact user fields for message sender / forwarded-from */

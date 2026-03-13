@@ -22,6 +22,7 @@ model User {
   isOnline    Boolean  @default(false)
   hideStoryViews Boolean @default(false)
   registrationIp String?
+  isVerified  Boolean  @default(false)
 
   messages    Message[]
   chatMembers ChatMember[]
@@ -114,7 +115,7 @@ model Reaction {
   createdAt DateTime @default(now())
 
   message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id])
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([messageId, userId, emoji])
 }
@@ -126,7 +127,7 @@ model ReadReceipt {
   readAt    DateTime @default(now())
 
   message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id])
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([messageId, userId])
 }
@@ -164,7 +165,7 @@ model StoryView {
   viewedAt DateTime @default(now())
 
   story Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
-  user  User  @relation(fields: [userId], references: [id])
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([storyId, userId])
 }

@@ -7,24 +7,28 @@ const router = Router();
 const ADMIN_USERNAMES = ['amebo4ka', 'abob4ek'];
 
 async function requireAdmin(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
-  const user = await prisma.user.findUnique({ where: { id: req.userId! }, select: { username: true } });
-  if (!user || !ADMIN_USERNAMES.includes(user.username)) {
-    res.status(403).json({ error: 'Доступ запрещён' });
-    return;
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.userId! }, select: { username: true } });
+    if (!user || !ADMIN_USERNAMES.includes(user.username)) {
+      res.status(403).json({ error: 'Доступ запрещён' });
+      return;
+    }
+    next();
+  } catch {
+    res.status(500).json({ error: 'Ошибка авторизации' });
   }
-  next();
 }
 
 // ── Stats ──────────────────────────────────────────────────────────────
 router.get('/stats', authenticateToken, requireAdmin, async (_req: Request, res: Response) => {
   try {
-    const [totalUsers, totalMessages, totalChats, onlineUsers, totalStories, totalMedia] = await Promise.all([
+    const [totalUsers, totalMessages, totalChats, onlineUsers, totalStories, verifiedUsers] = await Promise.all([
       prisma.user.count(),
       prisma.message.count({ where: { isDeleted: false } }),
       prisma.chat.count(),
       prisma.user.count({ where: { isOnline: true } }),
       prisma.story.count(),
-      prisma.media.count(),
+      prisma.user.count({ where: { isVerified: true } }),
     ]);
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const week = new Date(); week.setDate(week.getDate() - 7);
@@ -34,14 +38,13 @@ router.get('/stats', authenticateToken, requireAdmin, async (_req: Request, res:
       prisma.user.count({ where: { createdAt: { gte: week } } }),
       prisma.message.count({ where: { isDeleted: false, createdAt: { gte: week } } }),
     ]);
-    // Top active users
     const topUsers = await prisma.user.findMany({
       take: 5,
       orderBy: { messages: { _count: 'desc' } },
-      select: { id: true, username: true, displayName: true, _count: { select: { messages: true } } },
+      select: { id: true, username: true, displayName: true, isVerified: true, _count: { select: { messages: true } } },
     });
-    res.json({ totalUsers, totalMessages, totalChats, onlineUsers, totalStories, totalMedia, newUsersToday, newMessagesToday, newUsersWeek, newMessagesWeek, topUsers });
-  } catch { res.status(500).json({ error: 'Ошибка сервера' }); }
+    res.json({ totalUsers, totalMessages, totalChats, onlineUsers, totalStories, verifiedUsers, newUsersToday, newMessagesToday, newUsersWeek, newMessagesWeek, topUsers });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Ошибка сервера' }); }
 });
 
 // ── Users list ─────────────────────────────────────────────────────────
@@ -49,40 +52,35 @@ router.get('/users', authenticateToken, requireAdmin, async (req: Request, res: 
   try {
     const page = Math.max(1, parseInt(String(req.query.page || '1'), 10));
     const search = String(req.query.search || '');
+    const filter = String(req.query.filter || 'all'); // all | online | verified
     const limit = 20;
-    const where: any = search
-      ? { OR: [{ username: { contains: search, mode: 'insensitive' } }, { displayName: { contains: search, mode: 'insensitive' } }] }
-      : {};
+    const where: any = {};
+    if (search) where.OR = [
+      { username: { contains: search, mode: 'insensitive' as const } },
+      { displayName: { contains: search, mode: 'insensitive' as const } },
+    ];
+    if (filter === 'online') where.isOnline = true;
+    if (filter === 'verified') where.isVerified = true;
     const [users, total] = await Promise.all([
       prisma.user.findMany({
         where, skip: (page - 1) * limit, take: limit, orderBy: { createdAt: 'desc' },
-        select: { id: true, username: true, displayName: true, avatar: true, bio: true, email: true, isOnline: true, lastSeen: true, createdAt: true, registrationIp: true, _count: { select: { messages: true, stories: true } } },
+        select: { id: true, username: true, displayName: true, avatar: true, isOnline: true, isVerified: true, createdAt: true, registrationIp: true, _count: { select: { messages: true, stories: true } } },
       }),
       prisma.user.count({ where }),
     ]);
     res.json({ users, total, pages: Math.ceil(total / limit) });
-  } catch { res.status(500).json({ error: 'Ошибка сервера' }); }
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Ошибка сервера' }); }
 });
 
-// ── User detail ────────────────────────────────────────────────────────
-router.get('/users/:id', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
+// ── Toggle verified ────────────────────────────────────────────────────
+router.patch('/users/:id/verify', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: String(req.params.id) },
-      select: {
-        id: true, username: true, displayName: true, avatar: true, bio: true,
-        email: true, phone: true, birthday: true, isOnline: true, lastSeen: true,
-        createdAt: true, registrationIp: true,
-        _count: { select: { messages: true, stories: true, chatMembers: true } },
-      },
-    });
+    const id = String(req.params.id);
+    const user = await prisma.user.findUnique({ where: { id }, select: { isVerified: true } });
     if (!user) { res.status(404).json({ error: 'Не найден' }); return; }
-    // Find duplicate IP accounts
-    const sameIpCount = user.registrationIp
-      ? await prisma.user.count({ where: { registrationIp: user.registrationIp, id: { not: user.id } } })
-      : 0;
-    res.json({ user, sameIpCount });
-  } catch { res.status(500).json({ error: 'Ошибка сервера' }); }
+    const updated = await prisma.user.update({ where: { id }, data: { isVerified: !user.isVerified }, select: { id: true, isVerified: true } });
+    res.json(updated);
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Ошибка сервера' }); }
 });
 
 // ── Edit user ──────────────────────────────────────────────────────────
@@ -93,9 +91,9 @@ router.patch('/users/:id', authenticateToken, requireAdmin, async (req: Request,
     const data: any = {};
     if (displayName !== undefined) data.displayName = String(displayName).slice(0, 50);
     if (bio !== undefined) data.bio = String(bio).slice(0, 500);
-    const user = await prisma.user.update({ where: { id }, data, select: { id: true, username: true, displayName: true, bio: true } });
+    const user = await prisma.user.update({ where: { id }, data, select: { id: true, username: true, displayName: true } });
     res.json({ user });
-  } catch { res.status(500).json({ error: 'Ошибка сервера' }); }
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Ошибка сервера' }); }
 });
 
 // ── Delete user ────────────────────────────────────────────────────────
@@ -104,10 +102,18 @@ router.delete('/users/:id', authenticateToken, requireAdmin, async (req: Request
     const id = String(req.params.id);
     const target = await prisma.user.findUnique({ where: { id }, select: { username: true } });
     if (!target) { res.status(404).json({ error: 'Пользователь не найден' }); return; }
-    if (ADMIN_USERNAMES.includes(target.username)) { res.status(400).json({ error: 'Нельзя удалить себя' }); return; }
+    if (ADMIN_USERNAMES.includes(target.username)) { res.status(400).json({ error: 'Нельзя удалить администратора' }); return; }
+    // Manual cleanup to avoid cascade issues
+    await prisma.$transaction([
+      prisma.reaction.deleteMany({ where: { userId: id } }),
+      prisma.readReceipt.deleteMany({ where: { userId: id } }),
+      prisma.storyView.deleteMany({ where: { userId: id } }),
+      prisma.hiddenMessage.deleteMany({ where: { userId: id } }),
+      prisma.friendship.deleteMany({ where: { OR: [{ userId: id }, { friendId: id }] } }),
+    ]);
     await prisma.user.delete({ where: { id } });
     res.json({ success: true });
-  } catch { res.status(500).json({ error: 'Ошибка сервера' }); }
+  } catch (e) { console.error('Delete user error:', e); res.status(500).json({ error: 'Ошибка удаления: ' + String(e) }); }
 });
 
 // ── Messages ───────────────────────────────────────────────────────────
@@ -117,12 +123,12 @@ router.get('/messages', authenticateToken, requireAdmin, async (req: Request, re
     const search = String(req.query.search || '');
     const limit = 30;
     const where: any = { isDeleted: false };
-    if (search) where.content = { contains: search, mode: 'insensitive' };
+    if (search) where.content = { contains: search, mode: 'insensitive' as const };
     const [messages, total] = await Promise.all([
       prisma.message.findMany({
         where, skip: (page - 1) * limit, take: limit, orderBy: { createdAt: 'desc' },
         include: {
-          sender: { select: { id: true, username: true, displayName: true } },
+          sender: { select: { id: true, username: true, displayName: true, isVerified: true } },
           chat: { select: { id: true, name: true, type: true } },
           media: { select: { type: true } },
         },
@@ -130,14 +136,14 @@ router.get('/messages', authenticateToken, requireAdmin, async (req: Request, re
       prisma.message.count({ where }),
     ]);
     res.json({ messages, total, pages: Math.ceil(total / limit) });
-  } catch { res.status(500).json({ error: 'Ошибка сервера' }); }
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Ошибка сервера' }); }
 });
 
 router.delete('/messages/:id', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
   try {
-    await prisma.message.update({ where: { id: String(req.params.id) }, data: { isDeleted: true } });
+    await prisma.message.update({ where: { id: String(req.params.id) }, data: { isDeleted: true, content: null } });
     res.json({ success: true });
-  } catch { res.status(500).json({ error: 'Ошибка сервера' }); }
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Ошибка сервера' }); }
 });
 
 // ── Chats ──────────────────────────────────────────────────────────────
@@ -153,14 +159,14 @@ router.get('/chats', authenticateToken, requireAdmin, async (req: Request, res: 
       prisma.chat.count(),
     ]);
     res.json({ chats, total, pages: Math.ceil(total / limit) });
-  } catch { res.status(500).json({ error: 'Ошибка сервера' }); }
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Ошибка сервера' }); }
 });
 
 router.delete('/chats/:id', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
   try {
     await prisma.chat.delete({ where: { id: String(req.params.id) } });
     res.json({ success: true });
-  } catch { res.status(500).json({ error: 'Ошибка сервера' }); }
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Ошибка сервера' }); }
 });
 
 // ── Stories ────────────────────────────────────────────────────────────
@@ -172,29 +178,29 @@ router.get('/stories', authenticateToken, requireAdmin, async (req: Request, res
       prisma.story.findMany({
         skip: (page - 1) * limit, take: limit, orderBy: { createdAt: 'desc' },
         include: {
-          user: { select: { id: true, username: true, displayName: true } },
+          user: { select: { id: true, username: true, displayName: true, isVerified: true } },
           _count: { select: { views: true } },
         },
       }),
       prisma.story.count(),
     ]);
     res.json({ stories, total, pages: Math.ceil(total / limit) });
-  } catch { res.status(500).json({ error: 'Ошибка сервера' }); }
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Ошибка сервера' }); }
 });
 
 router.delete('/stories/:id', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
   try {
     await prisma.story.delete({ where: { id: String(req.params.id) } });
     res.json({ success: true });
-  } catch { res.status(500).json({ error: 'Ошибка сервера' }); }
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Ошибка сервера' }); }
 });
 
-// ── IPs with multiple accounts ─────────────────────────────────────────
+// ── Duplicate IPs ──────────────────────────────────────────────────────
 router.get('/duplicate-ips', authenticateToken, requireAdmin, async (_req: Request, res: Response) => {
   try {
     const users = await prisma.user.findMany({
       where: { registrationIp: { not: null } },
-      select: { id: true, username: true, displayName: true, createdAt: true, registrationIp: true },
+      select: { id: true, username: true, isVerified: true, createdAt: true, registrationIp: true },
       orderBy: { createdAt: 'desc' },
     });
     const ipMap: Record<string, any[]> = {};
@@ -203,11 +209,9 @@ router.get('/duplicate-ips', authenticateToken, requireAdmin, async (_req: Reque
       if (!ipMap[u.registrationIp]) ipMap[u.registrationIp] = [];
       ipMap[u.registrationIp].push(u);
     }
-    const duplicates = Object.entries(ipMap)
-      .filter(([, arr]) => arr.length > 1)
-      .map(([ip, accounts]) => ({ ip, accounts }));
+    const duplicates = Object.entries(ipMap).filter(([, arr]) => arr.length > 1).map(([ip, accounts]) => ({ ip, accounts }));
     res.json({ duplicates });
-  } catch { res.status(500).json({ error: 'Ошибка сервера' }); }
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Ошибка сервера' }); }
 });
 
 export default router;

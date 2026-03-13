@@ -11,6 +11,17 @@ import ConfirmModal from './ConfirmModal';
 import Avatar from './Avatar';
 import type { Chat } from '../lib/types';
 
+function VerifiedBadge() {
+  return (
+    <svg viewBox="0 0 22 22" fill="none" style={{ width: 13, height: 13, flexShrink: 0 }}>
+      <path d="M11 2L13.5 4.5L17 4L18 7.5L21 9.5L20 13L22 16L19 17.5L18 21L14.5 20L11 22L7.5 20L4 21L3 17.5L0 16L2 13L1 9.5L4 7.5L5 4L8.5 4.5L11 2Z" fill="#2B82CD"/>
+      <path d="M7 11L10 14L15 9" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+
+
 interface ChatListItemProps {
   chat: Chat;
   isActive: boolean;
@@ -149,6 +160,7 @@ function ChatListItem({ chat, isActive }: ChatListItemProps) {
             <div className="flex items-center gap-1.5 min-w-0">
               {isPinned && <Pin size={12} className="text-vortex-400 flex-shrink-0 rotate-45" />}
               <span className="text-sm font-medium text-white truncate">{chatName}</span>
+              {chat.type === 'personal' && otherMember?.user.isVerified && <VerifiedBadge />}
             </div>
             {timeStr && <span className="text-xs text-zinc-500 flex-shrink-0 ml-2">{timeStr}</span>}
           </div>

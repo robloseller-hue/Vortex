@@ -8,6 +8,17 @@ import { User, Message, FriendshipStatus } from '../lib/types';
 import ImageLightbox from './ImageLightbox';
 import { getSocket } from '../lib/socket';
 
+function VerifiedBadge() {
+  return (
+    <svg viewBox="0 0 22 22" fill="none" style={{ width: 18, height: 18, flexShrink: 0 }}>
+      <path d="M11 2L13.5 4.5L17 4L18 7.5L21 9.5L20 13L22 16L19 17.5L18 21L14.5 20L11 22L7.5 20L4 21L3 17.5L0 16L2 13L1 9.5L4 7.5L5 4L8.5 4.5L11 2Z" fill="#2B82CD"/>
+      <path d="M7 11L10 14L15 9" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+
+
 interface UserProfileProps {
   userId: string;
   chatId?: string;

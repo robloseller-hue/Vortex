@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 const API = '/api/admin';
 
 function authHeaders() {
-  const token = localStorage.getItem('zync_token');
+  const token = localStorage.getItem('zync_token') || localStorage.getItem('vortex_token');
   return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
 }
 async function apiFetch(url: string, opts: RequestInit = {}) {
@@ -25,26 +25,35 @@ const I = {
   Trash:     () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>,
   Edit:      () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
   Eye:       () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
+  Verify:    () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path d="M9 12l2 2 4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  VerifyFill:() => <svg viewBox="0 0 22 22" fill="none" className="w-4 h-4"><path d="M11 2L13.5 4.5L17 4L18 7.5L21 9.5L20 13L22 16L19 17.5L18 21L14.5 20L11 22L7.5 20L4 21L3 17.5L0 16L2 13L1 9.5L4 7.5L5 4L8.5 4.5L11 2Z" fill="#2B82CD"/><path d="M7 11L10 14L15 9" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   Online:    () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-2.5 h-2.5 text-green-400"><circle cx="12" cy="12" r="10"/></svg>,
   Search:    () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
   Chevron:   () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3"><polyline points="9 18 15 12 9 6"/></svg>,
   IP:        () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 10h2l1 3 2-6 1 3h3"/></svg>,
-  Calendar:  () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
-  Trophy:    () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M6 9H4a2 2 0 0 1-2-2V5h4"/><path d="M18 9h2a2 2 0 0 0 2-2V5h-4"/><path d="M12 17v4"/><path d="M8 21h8"/><path d="M6 9a6 6 0 0 0 12 0V3H6z"/></svg>,
-  Media:     () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>,
-  Week:      () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/></svg>,
-  Save:      () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>,
   Refresh:   () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>,
+  Trophy:    () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M6 9H4a2 2 0 0 1-2-2V5h4"/><path d="M18 9h2a2 2 0 0 0 2-2V5h-4"/><path d="M12 17v4"/><path d="M8 21h8"/><path d="M6 9a6 6 0 0 0 12 0V3H6z"/></svg>,
   Group:     () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><circle cx="9" cy="7" r="3"/><path d="M3 21v-2a6 6 0 0 1 12 0v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.87"/></svg>,
   Personal:  () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/></svg>,
+  Calendar:  () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
 };
+
+// ─── Verified Badge (like Telegram) ───────────────────────────────────
+function VerifiedBadge({ size = 14 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 22 22" fill="none" style={{ width: size, height: size, flexShrink: 0 }}>
+      <path d="M11 2L13.5 4.5L17 4L18 7.5L21 9.5L20 13L22 16L19 17.5L18 21L14.5 20L11 22L7.5 20L4 21L3 17.5L0 16L2 13L1 9.5L4 7.5L5 4L8.5 4.5L11 2Z" fill="#2B82CD"/>
+      <path d="M7 11L10 14L15 9" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────
 function Spinner() {
   return <div className="flex items-center justify-center py-16"><div className="w-7 h-7 border-2 border-vortex-500 border-t-transparent rounded-full animate-spin"/></div>;
 }
 function Badge({ children, color = 'zinc' }: { children: React.ReactNode; color?: string }) {
-  const map: Record<string, string> = { zinc: 'bg-zinc-800 text-zinc-400', blue: 'bg-blue-500/15 text-blue-400', green: 'bg-green-500/15 text-green-400', red: 'bg-red-500/15 text-red-400', vortex: 'bg-vortex-500/15 text-vortex-400', yellow: 'bg-yellow-500/15 text-yellow-400' };
+  const map: Record<string, string> = { zinc: 'bg-zinc-800 text-zinc-400', blue: 'bg-blue-500/15 text-blue-400', green: 'bg-green-500/15 text-green-400', red: 'bg-red-500/15 text-red-400', vortex: 'bg-vortex-500/15 text-vortex-400', yellow: 'bg-yellow-500/15 text-yellow-400', sky: 'bg-sky-500/15 text-sky-400' };
   return <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${map[color] || map.zinc}`}>{children}</span>;
 }
 function Pagination({ page, pages, onChange }: { page: number; pages: number; onChange: (p: number) => void }) {
@@ -69,149 +78,19 @@ function StatCard({ label, value, Icon, gradient, sub }: { label: string; value:
     </div>
   );
 }
-
-// ─── Confirm Modal ────────────────────────────────────────────────────
-function ConfirmModal({ title, desc, onConfirm, onCancel, danger = true }: { title: string; desc: string; onConfirm: () => void; onCancel: () => void; danger?: boolean }) {
+function ConfirmModal({ title, desc, onConfirm, onCancel }: { title: string; desc: string; onConfirm: () => void; onCancel: () => void }) {
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] backdrop-blur-sm">
       <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 w-80 space-y-4 shadow-2xl">
         <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${danger ? 'bg-red-500/15 text-red-400' : 'bg-yellow-500/15 text-yellow-400'}`}><I.Trash /></div>
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-red-500/15 text-red-400"><I.Trash /></div>
           <div><h3 className="text-white font-semibold text-sm">{title}</h3><p className="text-zinc-500 text-xs">{desc}</p></div>
         </div>
         <div className="flex gap-2">
           <button onClick={onCancel} className="flex-1 py-2.5 rounded-xl bg-zinc-800 text-white text-sm hover:bg-zinc-700 transition-colors">Отмена</button>
-          <button onClick={onConfirm} className={`flex-1 py-2.5 rounded-xl text-white text-sm transition-colors ${danger ? 'bg-red-600 hover:bg-red-500' : 'bg-yellow-600 hover:bg-yellow-500'}`}>Удалить</button>
+          <button onClick={onConfirm} className="flex-1 py-2.5 rounded-xl bg-red-600 text-white text-sm hover:bg-red-500 transition-colors">Удалить</button>
         </div>
       </div>
-    </div>
-  );
-}
-
-// ─── User Detail Modal ────────────────────────────────────────────────
-function UserDetailModal({ userId, onClose, onDeleted }: { userId: string; onClose: () => void; onDeleted: () => void }) {
-  const [data, setData] = useState<any>(null);
-  const [editing, setEditing] = useState(false);
-  const [displayName, setDisplayName] = useState('');
-  const [bio, setBio] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [confirmDel, setConfirmDel] = useState(false);
-
-  useEffect(() => {
-    apiFetch(`${API}/users/${userId}`).then(d => {
-      setData(d);
-      setDisplayName(d.user.displayName || '');
-      setBio(d.user.bio || '');
-    }).catch(console.error);
-  }, [userId]);
-
-  async function save() {
-    setSaving(true);
-    try {
-      await apiFetch(`${API}/users/${userId}`, { method: 'PATCH', body: JSON.stringify({ displayName, bio }) });
-      setEditing(false);
-      setData((prev: any) => ({ ...prev, user: { ...prev.user, displayName, bio } }));
-    } catch (e: any) { alert(e.message); }
-    setSaving(false);
-  }
-
-  async function del() {
-    try {
-      await apiFetch(`${API}/users/${userId}`, { method: 'DELETE' });
-      onDeleted(); onClose();
-    } catch (e: any) { alert(e.message); }
-  }
-
-  if (!data) return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] backdrop-blur-sm">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8"><Spinner /></div>
-    </div>
-  );
-
-  const u = data.user;
-  return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] backdrop-blur-sm p-4">
-      <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800 bg-zinc-900/50">
-          <h2 className="text-white font-semibold flex items-center gap-2"><I.Eye /> Профиль пользователя</h2>
-          <button onClick={onClose} className="text-zinc-500 hover:text-white w-8 h-8 flex items-center justify-center rounded-xl hover:bg-zinc-800 transition-colors"><I.Close /></button>
-        </div>
-        <div className="p-5 space-y-4">
-          {/* Avatar + name */}
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-vortex-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl shrink-0">
-              {(u.displayName?.[0] || u.username[0]).toUpperCase()}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-white font-semibold">{u.displayName || u.username}</span>
-                {u.isOnline ? <Badge color="green">онлайн</Badge> : <Badge color="zinc">офлайн</Badge>}
-              </div>
-              <div className="text-zinc-500 text-sm">@{u.username}</div>
-            </div>
-          </div>
-
-          {/* Stats row */}
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { label: 'Сообщений', val: u._count?.messages || 0 },
-              { label: 'Историй', val: u._count?.stories || 0 },
-              { label: 'Чатов', val: u._count?.chatMembers || 0 },
-            ].map(s => (
-              <div key={s.label} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3 text-center">
-                <div className="text-white font-bold text-lg">{s.val}</div>
-                <div className="text-zinc-600 text-xs">{s.label}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Info fields */}
-          <div className="space-y-2 text-sm">
-            {[
-              { icon: <I.Calendar />, label: 'Регистрация', val: new Date(u.createdAt).toLocaleString('ru') },
-              { icon: <I.Calendar />, label: 'Последний раз', val: new Date(u.lastSeen).toLocaleString('ru') },
-              { icon: <I.IP />, label: 'IP адрес', val: u.registrationIp || '—' },
-            ].map(f => (
-              <div key={f.label} className="flex items-center gap-3 px-3 py-2 bg-zinc-900 rounded-xl border border-zinc-800">
-                <span className="text-zinc-500 shrink-0">{f.icon}</span>
-                <span className="text-zinc-500 shrink-0">{f.label}:</span>
-                <span className="text-zinc-300 truncate">{f.val}</span>
-              </div>
-            ))}
-            {data.sameIpCount > 0 && (
-              <div className="flex items-center gap-2 px-3 py-2 bg-red-500/10 rounded-xl border border-red-500/20 text-red-400 text-xs">
-                <I.Security />
-                Ещё {data.sameIpCount} аккаунт(ов) с этого IP
-              </div>
-            )}
-          </div>
-
-          {/* Edit form */}
-          {editing ? (
-            <div className="space-y-2">
-              <input value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Имя" maxLength={50}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-vortex-500 transition-colors"/>
-              <textarea value={bio} onChange={e => setBio(e.target.value)} placeholder="Bio" maxLength={500} rows={3}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-vortex-500 transition-colors resize-none"/>
-              <div className="flex gap-2">
-                <button onClick={() => setEditing(false)} className="flex-1 py-2 rounded-xl bg-zinc-800 text-zinc-400 text-sm hover:bg-zinc-700 transition-colors">Отмена</button>
-                <button onClick={save} disabled={saving} className="flex-1 py-2 rounded-xl bg-vortex-600 text-white text-sm hover:bg-vortex-500 transition-colors flex items-center justify-center gap-1.5">
-                  <I.Save />{saving ? 'Сохранение...' : 'Сохранить'}
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="flex gap-2">
-              {u.username !== 'amebo4ka' && <>
-                <button onClick={() => setEditing(true)} className="flex-1 py-2.5 rounded-xl bg-zinc-800 text-zinc-300 text-sm hover:bg-zinc-700 transition-colors flex items-center justify-center gap-1.5"><I.Edit /> Редактировать</button>
-                <button onClick={() => setConfirmDel(true)} className="flex-1 py-2.5 rounded-xl bg-red-600/20 text-red-400 text-sm hover:bg-red-600/30 transition-colors flex items-center justify-center gap-1.5"><I.Trash /> Удалить</button>
-              </>}
-            </div>
-          )}
-        </div>
-      </div>
-      {confirmDel && <ConfirmModal title="Удалить пользователя?" desc="Все данные будут удалены безвозвратно" onConfirm={del} onCancel={() => setConfirmDel(false)} />}
     </div>
   );
 }
@@ -220,39 +99,39 @@ function UserDetailModal({ userId, onClose, onDeleted }: { userId: string; onClo
 function Dashboard() {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const load = () => { setLoading(true); apiFetch(`${API}/stats`).then(setStats).catch(console.error).finally(() => setLoading(false)); };
-  useEffect(load, []);
+  const load = useCallback(() => { setLoading(true); apiFetch(`${API}/stats`).then(setStats).catch(console.error).finally(() => setLoading(false)); }, []);
+  useEffect(() => { load(); }, [load]);
   if (loading) return <Spinner />;
   if (!stats) return <div className="text-center text-zinc-500 py-10">Ошибка загрузки</div>;
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">Обзор системы</h2>
+        <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Обзор системы</h2>
         <button onClick={load} className="text-zinc-500 hover:text-white p-1.5 rounded-lg hover:bg-zinc-800 transition-colors"><I.Refresh /></button>
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard label="Пользователей" value={stats.totalUsers} Icon={() => <I.Users />} gradient="bg-blue-500/15 text-blue-400" sub={`+${stats.newUsersWeek} за неделю`}/>
         <StatCard label="Онлайн" value={stats.onlineUsers} Icon={() => <I.Online />} gradient="bg-green-500/15 text-green-400"/>
         <StatCard label="Сообщений" value={stats.totalMessages} Icon={() => <I.Messages />} gradient="bg-vortex-500/15 text-vortex-400" sub={`+${stats.newMessagesWeek} за неделю`}/>
-        <StatCard label="Чатов" value={stats.totalChats} Icon={() => <I.Chats />} gradient="bg-orange-500/15 text-orange-400"/>
+        <StatCard label="Верифицировано" value={stats.verifiedUsers} Icon={() => <VerifiedBadge size={20}/>} gradient="bg-sky-500/15 text-sky-400"/>
       </div>
       <div className="grid grid-cols-3 gap-3">
-        <StatCard label="Новых сегодня" value={stats.newUsersToday} Icon={() => <I.Week />} gradient="bg-cyan-500/15 text-cyan-400"/>
+        <StatCard label="Новых сегодня" value={stats.newUsersToday} Icon={() => <I.Calendar />} gradient="bg-cyan-500/15 text-cyan-400"/>
         <StatCard label="Сообщений сегодня" value={stats.newMessagesToday} Icon={() => <I.Messages />} gradient="bg-pink-500/15 text-pink-400"/>
-        <StatCard label="Медиафайлов" value={stats.totalMedia} Icon={() => <I.Media />} gradient="bg-yellow-500/15 text-yellow-400"/>
+        <StatCard label="Историй" value={stats.totalStories} Icon={() => <I.Stories />} gradient="bg-yellow-500/15 text-yellow-400"/>
       </div>
-      {/* Top users */}
       {stats.topUsers?.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3 flex items-center gap-2"><I.Trophy /> Топ по активности</h3>
+          <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3 flex items-center gap-2"><I.Trophy /> Топ по активности</h3>
           <div className="space-y-2">
             {stats.topUsers.map((u: any, i: number) => (
               <div key={u.id} className="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 flex items-center gap-3">
                 <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${i === 0 ? 'bg-yellow-500/20 text-yellow-400' : i === 1 ? 'bg-zinc-500/20 text-zinc-400' : i === 2 ? 'bg-orange-500/20 text-orange-400' : 'bg-zinc-800 text-zinc-500'}`}>#{i+1}</div>
                 <div className="w-7 h-7 rounded-full bg-gradient-to-br from-vortex-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold shrink-0">{(u.displayName?.[0] || u.username[0]).toUpperCase()}</div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 flex items-center gap-1.5">
                   <span className="text-white text-sm font-medium">{u.displayName || u.username}</span>
-                  <span className="text-zinc-600 text-xs ml-2">@{u.username}</span>
+                  {u.isVerified && <VerifiedBadge size={14}/>}
+                  <span className="text-zinc-600 text-xs ml-1">@{u.username}</span>
                 </div>
                 <Badge color="vortex">{u._count.messages} сообщ.</Badge>
               </div>
@@ -269,60 +148,93 @@ function UsersTab() {
   const [users, setUsers] = useState<any[]>([]);
   const [total, setTotal] = useState(0); const [pages, setPages] = useState(1);
   const [page, setPage] = useState(1); const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
+  const [verifyLoading, setVerifyLoading] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    setLoading(true);
-    try { const d = await apiFetch(`${API}/users?page=${page}&search=${encodeURIComponent(search)}`); setUsers(d.users); setTotal(d.total); setPages(d.pages); }
-    catch (e) { console.error(e); }
+    setLoading(true); setError(null);
+    try { const d = await apiFetch(`${API}/users?page=${page}&search=${encodeURIComponent(search)}&filter=${filter}`); setUsers(d.users); setTotal(d.total); setPages(d.pages); }
+    catch (e: any) { setError(e.message); }
     setLoading(false);
-  }, [page, search]);
+  }, [page, search, filter]);
   useEffect(() => { load(); }, [load]);
+
+  async function toggleVerify(id: string) {
+    setVerifyLoading(id);
+    try {
+      const res = await apiFetch(`${API}/users/${id}/verify`, { method: 'PATCH' });
+      setUsers(prev => prev.map(u => u.id === id ? { ...u, isVerified: res.isVerified } : u));
+    } catch (e: any) { alert(e.message); }
+    setVerifyLoading(null);
+  }
 
   async function del(id: string) {
     try { await apiFetch(`${API}/users/${id}`, { method: 'DELETE' }); setConfirmDel(null); load(); }
-    catch (e: any) { alert(e.message); }
+    catch (e: any) { alert('Ошибка: ' + e.message); }
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">Пользователи <span className="text-zinc-600 font-normal normal-case">({total})</span></h2>
-        <div className="relative">
-          <input className="bg-zinc-800 text-white rounded-xl px-4 py-2 text-sm outline-none border border-zinc-700 focus:border-vortex-500 w-52 transition-colors pl-9" placeholder="Поиск..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}/>
-          <span className="absolute left-3 top-2.5 text-zinc-500"><I.Search /></span>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Пользователи <span className="text-zinc-600 normal-case font-normal">({total})</span></h2>
+        <div className="flex items-center gap-2">
+          {/* Filter */}
+          <div className="flex gap-1 bg-zinc-900 border border-zinc-800 rounded-xl p-1">
+            {[['all','Все'],['online','Онлайн'],['verified','Верифиц.']].map(([v,l]) => (
+              <button key={v} onClick={() => { setFilter(v); setPage(1); }} className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${filter === v ? 'bg-vortex-600 text-white' : 'text-zinc-500 hover:text-white'}`}>{l}</button>
+            ))}
+          </div>
+          <div className="relative">
+            <input className="bg-zinc-800 text-white rounded-xl px-4 py-2 text-sm outline-none border border-zinc-700 focus:border-vortex-500 w-44 transition-colors pl-9" placeholder="Поиск..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}/>
+            <span className="absolute left-3 top-2.5 text-zinc-500"><I.Search /></span>
+          </div>
         </div>
       </div>
+      {error && <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-red-400 text-sm">{error}</div>}
       {loading ? <Spinner /> : (
         <div className="space-y-2">
           {users.map(u => (
             <div key={u.id} className="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 flex items-center gap-3 hover:border-zinc-700 transition-colors group">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-vortex-500 to-purple-600 flex items-center justify-center text-white font-bold shrink-0 text-sm">{(u.displayName?.[0] || u.username[0]).toUpperCase()}</div>
+              <div className="relative shrink-0">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-vortex-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">{(u.displayName?.[0] || u.username[0]).toUpperCase()}</div>
+                {u.isOnline && <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-zinc-900"/>}
+              </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="text-white font-medium text-sm">{u.displayName || u.username}</span>
+                  {u.isVerified && <VerifiedBadge size={14}/>}
                   <span className="text-zinc-600 text-xs">@{u.username}</span>
-                  {u.isOnline && <I.Online />}
                 </div>
                 <div className="text-xs text-zinc-600 mt-0.5 flex items-center gap-2 flex-wrap">
                   <span>{u._count?.messages || 0} сообщ.</span>
                   <span>·</span>
                   <span>{new Date(u.createdAt).toLocaleDateString('ru')}</span>
-                  {u.registrationIp && <><span>·</span><span className="font-mono">{u.registrationIp}</span></>}
+                  {u.registrationIp && <><span>·</span><span className="font-mono text-zinc-700">{u.registrationIp}</span></>}
                 </div>
               </div>
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => setSelectedUser(u.id)} className="text-zinc-500 hover:text-vortex-400 p-1.5 rounded-lg hover:bg-vortex-500/10 transition-all" title="Подробнее"><I.Eye /></button>
-                {u.username !== 'amebo4ka' && <button onClick={() => setConfirmDel(u.id)} className="text-zinc-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition-all" title="Удалить"><I.Trash /></button>}
+                {/* Verify button */}
+                <button
+                  onClick={() => toggleVerify(u.id)}
+                  disabled={verifyLoading === u.id}
+                  title={u.isVerified ? 'Снять верификацию' : 'Верифицировать'}
+                  className={`p-1.5 rounded-lg transition-all ${u.isVerified ? 'text-sky-400 bg-sky-500/10 hover:bg-red-500/10 hover:text-red-400' : 'text-zinc-500 hover:text-sky-400 hover:bg-sky-500/10'}`}
+                >
+                  {verifyLoading === u.id ? <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"/> : <VerifiedBadge size={16}/>}
+                </button>
+                {!['amebo4ka','abob4ek'].includes(u.username) && (
+                  <button onClick={() => setConfirmDel(u.id)} className="text-zinc-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition-all" title="Удалить"><I.Trash /></button>
+                )}
               </div>
             </div>
           ))}
+          {users.length === 0 && <div className="text-center text-zinc-600 py-8">Пользователи не найдены</div>}
         </div>
       )}
       <Pagination page={page} pages={pages} onChange={setPage}/>
-      {selectedUser && <UserDetailModal userId={selectedUser} onClose={() => setSelectedUser(null)} onDeleted={load}/>}
       {confirmDel && <ConfirmModal title="Удалить пользователя?" desc="Все данные будут удалены безвозвратно" onConfirm={() => del(confirmDel)} onCancel={() => setConfirmDel(null)}/>}
     </div>
   );
@@ -351,7 +263,7 @@ function MessagesTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
-        <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">Сообщения <span className="text-zinc-600 font-normal normal-case">({total})</span></h2>
+        <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Сообщения <span className="text-zinc-600 normal-case font-normal">({total})</span></h2>
         <div className="relative">
           <input className="bg-zinc-800 text-white rounded-xl px-4 py-2 text-sm outline-none border border-zinc-700 focus:border-vortex-500 w-52 transition-colors pl-9" placeholder="Поиск по тексту..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}/>
           <span className="absolute left-3 top-2.5 text-zinc-500"><I.Search /></span>
@@ -362,12 +274,11 @@ function MessagesTab() {
           {messages.map(m => (
             <div key={m.id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 hover:border-zinc-700 transition-colors group">
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-vortex-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5">
-                  {(m.sender?.displayName?.[0] || m.sender?.username?.[0] || '?').toUpperCase()}
-                </div>
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-vortex-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5">{(m.sender?.displayName?.[0] || m.sender?.username?.[0] || '?').toUpperCase()}</div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                     <span className="text-vortex-400 text-xs font-semibold">@{m.sender?.username}</span>
+                    {m.sender?.isVerified && <VerifiedBadge size={12}/>}
                     <span className="text-zinc-700"><I.Chevron /></span>
                     <span className="text-zinc-500 text-xs">{m.chat?.name || (m.chat?.type === 'personal' ? 'Личный чат' : 'Группа')}</span>
                     {m.media?.length > 0 && <Badge color="blue">{m.media[0].type}</Badge>}
@@ -379,6 +290,7 @@ function MessagesTab() {
               </div>
             </div>
           ))}
+          {messages.length === 0 && <div className="text-center text-zinc-600 py-8">Сообщений не найдено</div>}
         </div>
       )}
       <Pagination page={page} pages={pages} onChange={setPage}/>
@@ -390,8 +302,7 @@ function MessagesTab() {
 function ChatsTab() {
   const [chats, setChats] = useState<any[]>([]);
   const [total, setTotal] = useState(0); const [pages, setPages] = useState(1);
-  const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1); const [loading, setLoading] = useState(false);
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -409,7 +320,7 @@ function ChatsTab() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">Чаты <span className="text-zinc-600 font-normal normal-case">({total})</span></h2>
+      <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Чаты <span className="text-zinc-600 normal-case font-normal">({total})</span></h2>
       {loading ? <Spinner /> : (
         <div className="space-y-2">
           {chats.map(c => (
@@ -418,10 +329,7 @@ function ChatsTab() {
                 {c.type === 'group' ? <I.Group /> : <I.Personal />}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-white text-sm font-medium">{c.name || (c.type === 'personal' ? 'Личный чат' : 'Групповой чат')}</span>
-                  <Badge color={c.type === 'group' ? 'blue' : 'zinc'}>{c.type === 'group' ? 'Группа' : 'Личный'}</Badge>
-                </div>
+                <div className="flex items-center gap-2"><span className="text-white text-sm font-medium">{c.name || (c.type === 'personal' ? 'Личный чат' : 'Групповой чат')}</span><Badge color={c.type === 'group' ? 'blue' : 'zinc'}>{c.type === 'group' ? 'Группа' : 'Личный'}</Badge></div>
                 <div className="text-xs text-zinc-600 mt-0.5">{c._count?.members || 0} участн. · {c._count?.messages || 0} сообщ. · {new Date(c.createdAt).toLocaleDateString('ru')}</div>
               </div>
               <button onClick={() => setConfirmDel(c.id)} className="text-zinc-700 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100"><I.Trash /></button>
@@ -430,7 +338,7 @@ function ChatsTab() {
         </div>
       )}
       <Pagination page={page} pages={pages} onChange={setPage}/>
-      {confirmDel && <ConfirmModal title="Удалить чат?" desc="Все сообщения в чате будут удалены" onConfirm={() => del(confirmDel)} onCancel={() => setConfirmDel(null)}/>}
+      {confirmDel && <ConfirmModal title="Удалить чат?" desc="Все сообщения будут удалены" onConfirm={() => del(confirmDel)} onCancel={() => setConfirmDel(null)}/>}
     </div>
   );
 }
@@ -439,8 +347,7 @@ function ChatsTab() {
 function StoriesTab() {
   const [stories, setStories] = useState<any[]>([]);
   const [total, setTotal] = useState(0); const [pages, setPages] = useState(1);
-  const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1); const [loading, setLoading] = useState(false);
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -456,28 +363,22 @@ function StoriesTab() {
     catch (e: any) { alert(e.message); }
   }
 
-  const isExpired = (exp: string) => new Date(exp) < new Date();
-
   return (
     <div className="space-y-4">
-      <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">Истории <span className="text-zinc-600 font-normal normal-case">({total})</span></h2>
+      <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Истории <span className="text-zinc-600 normal-case font-normal">({total})</span></h2>
       {loading ? <Spinner /> : (
         <div className="space-y-2">
           {stories.map(s => (
             <div key={s.id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex items-center gap-3 hover:border-zinc-700 transition-colors group">
               <div className="w-10 h-10 rounded-xl bg-yellow-500/15 text-yellow-400 flex items-center justify-center shrink-0"><I.Stories /></div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="text-white text-sm font-medium">@{s.user?.username}</span>
+                  {s.user?.isVerified && <VerifiedBadge size={13}/>}
                   <Badge color={s.type === 'text' ? 'vortex' : 'blue'}>{s.type}</Badge>
-                  {isExpired(s.expiresAt) ? <Badge color="zinc">истекла</Badge> : <Badge color="green">активна</Badge>}
+                  {new Date(s.expiresAt) < new Date() ? <Badge color="zinc">истекла</Badge> : <Badge color="green">активна</Badge>}
                 </div>
-                <div className="text-xs text-zinc-600 mt-0.5 flex gap-3 flex-wrap">
-                  <span>{s._count?.views || 0} просмотров</span>
-                  <span>Создана: {new Date(s.createdAt).toLocaleString('ru')}</span>
-                  <span>Истекает: {new Date(s.expiresAt).toLocaleString('ru')}</span>
-                </div>
-                {s.content && <p className="text-zinc-500 text-xs mt-1 truncate">{s.content}</p>}
+                <div className="text-xs text-zinc-600 mt-0.5">{s._count?.views || 0} просмотров · {new Date(s.createdAt).toLocaleString('ru')}</div>
               </div>
               <button onClick={() => setConfirmDel(s.id)} className="text-zinc-700 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100"><I.Trash /></button>
             </div>
@@ -504,19 +405,17 @@ function SecurityTab() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
-        <I.Security /> Безопасность
-      </h2>
+      <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Безопасность</h2>
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
-        <div className="flex items-center gap-3 mb-3">
+        <div className="flex items-center gap-3 mb-4">
           <div className="w-9 h-9 rounded-xl bg-red-500/15 text-red-400 flex items-center justify-center shrink-0"><I.IP /></div>
-          <div>
+          <div className="flex-1">
             <div className="text-white font-medium text-sm">Дублирующиеся IP-адреса</div>
             <div className="text-zinc-500 text-xs">Несколько аккаунтов с одного адреса</div>
           </div>
-          <Badge color={data?.duplicates?.length > 0 ? 'red' : 'green'} >{data?.duplicates?.length || 0} найдено</Badge>
+          <Badge color={data?.duplicates?.length > 0 ? 'red' : 'green'}>{data?.duplicates?.length || 0} найдено</Badge>
         </div>
-        {data?.duplicates?.length === 0 && <div className="text-center text-zinc-600 text-sm py-4">Подозрительных IP не обнаружено</div>}
+        {data?.duplicates?.length === 0 && <div className="text-center text-zinc-600 text-sm py-4">Подозрительных IP не обнаружено ✓</div>}
         <div className="space-y-2">
           {data?.duplicates?.map((d: any) => (
             <div key={d.ip} className="border border-zinc-800 rounded-xl overflow-hidden">
@@ -532,10 +431,8 @@ function SecurityTab() {
                   {d.accounts.map((a: any) => (
                     <div key={a.id} className="px-4 py-2.5 flex items-center gap-3 bg-zinc-900/50">
                       <div className="w-7 h-7 rounded-full bg-gradient-to-br from-vortex-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold shrink-0">{a.username[0].toUpperCase()}</div>
-                      <div className="flex-1">
-                        <span className="text-white text-sm">@{a.username}</span>
-                        <span className="text-zinc-600 text-xs ml-2">{new Date(a.createdAt).toLocaleDateString('ru')}</span>
-                      </div>
+                      <span className="text-white text-sm flex items-center gap-1">@{a.username}{a.isVerified && <VerifiedBadge size={13}/>}</span>
+                      <span className="text-zinc-600 text-xs ml-auto">{new Date(a.createdAt).toLocaleDateString('ru')}</span>
                     </div>
                   ))}
                 </div>
@@ -550,21 +447,19 @@ function SecurityTab() {
 
 // ─── Tabs ──────────────────────────────────────────────────────────────
 const TABS = [
-  { id: 'dashboard', label: 'Дашборд', Icon: I.Dashboard },
-  { id: 'users',     label: 'Пользователи', Icon: I.Users },
-  { id: 'messages',  label: 'Сообщения', Icon: I.Messages },
-  { id: 'chats',     label: 'Чаты', Icon: I.Chats },
-  { id: 'stories',   label: 'Истории', Icon: I.Stories },
-  { id: 'security',  label: 'Безопасность', Icon: I.Security },
+  { id: 'dashboard', label: 'Дашборд',      Icon: I.Dashboard },
+  { id: 'users',     label: 'Пользователи', Icon: I.Users     },
+  { id: 'messages',  label: 'Сообщения',    Icon: I.Messages  },
+  { id: 'chats',     label: 'Чаты',         Icon: I.Chats     },
+  { id: 'stories',   label: 'Истории',      Icon: I.Stories   },
+  { id: 'security',  label: 'Безопасность', Icon: I.Security  },
 ];
 
-// ─── Main ─────────────────────────────────────────────────────────────
 export default function AdminPage({ onClose }: { onClose: () => void }) {
   const [tab, setTab] = useState('dashboard');
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4 backdrop-blur-sm">
       <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
-        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 shrink-0 bg-zinc-900/50">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-vortex-500 to-purple-600 flex items-center justify-center text-white"><I.Shield /></div>
@@ -572,7 +467,6 @@ export default function AdminPage({ onClose }: { onClose: () => void }) {
           </div>
           <button onClick={onClose} className="text-zinc-500 hover:text-white w-8 h-8 flex items-center justify-center rounded-xl hover:bg-zinc-800 transition-colors"><I.Close /></button>
         </div>
-        {/* Tabs */}
         <div className="flex gap-0.5 px-4 pt-3 pb-0 border-b border-zinc-800 shrink-0 overflow-x-auto">
           {TABS.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
@@ -581,7 +475,6 @@ export default function AdminPage({ onClose }: { onClose: () => void }) {
             </button>
           ))}
         </div>
-        {/* Content */}
         <div className="flex-1 overflow-y-auto p-5">
           {tab === 'dashboard' && <Dashboard />}
           {tab === 'users'     && <UsersTab />}
