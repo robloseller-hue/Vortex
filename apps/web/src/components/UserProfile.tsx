@@ -222,10 +222,12 @@ export default function UserProfile({ userId, chatId, onClose, isSelf }: UserPro
               </div>
 
               {/* Имя */}
-              <h3 className="mt-5 text-[28px] font-bold text-transparent bg-clip-text bg-gradient-to-b from-white to-white/70 tracking-tight text-center px-4">
-                {profile.displayName || profile.username}
+              <div className="mt-5 flex items-center justify-center gap-2">
+                <h3 className="text-[28px] font-bold text-transparent bg-clip-text bg-gradient-to-b from-white to-white/70 tracking-tight text-center px-4">
+                  {profile.displayName || profile.username}
+                </h3>
                 {profile.isVerified && <VerifiedBadge />}
-              </h3>
+              </div>
 
               {/* Username (неизменяемый) */}
               <div className="flex items-center gap-1.5 mt-2.5 bg-vortex-500/10 hover:bg-vortex-500/20 transition-colors px-4 py-1.5 rounded-full border border-vortex-500/20 backdrop-blur-sm cursor-default">

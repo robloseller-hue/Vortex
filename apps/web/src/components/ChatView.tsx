@@ -477,7 +477,7 @@ export default function ChatView({ onStartCall, onStartGroupCall }: { onStartCal
               )}
             </div>
             <div className="min-w-0 text-left">
-              <h3 className="text-base font-semibold text-white truncate drop-shadow-sm group-hover:text-accent/90 transition-colors flex items-center gap-1.5">{chatName}{chat?.type === 'personal' && otherMember?.user.isVerified && <VerifiedBadge size={16}/>}</h3>
+              <div className="flex items-center gap-1.5"><h3 className="text-base font-semibold text-white truncate drop-shadow-sm group-hover:text-accent/90 transition-colors">{chatName}</h3>{chat?.type === 'personal' && otherMember?.user.isVerified && <VerifiedBadge size={16}/>}</div>
               <p className="text-xs text-zinc-400 truncate">
                 {isFavorites
                   ? t('favoritesDescription')

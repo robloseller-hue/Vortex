@@ -160,7 +160,7 @@ function ChatListItem({ chat, isActive }: ChatListItemProps) {
             <div className="flex items-center gap-1.5 min-w-0">
               {isPinned && <Pin size={12} className="text-vortex-400 flex-shrink-0 rotate-45" />}
               <span className="text-sm font-medium text-white truncate">{chatName}</span>
-              {chat.type === 'personal' && otherMember?.user.isVerified && <VerifiedBadge />}
+              {chat.type === 'personal' && otherMember?.user.isVerified && <span className="flex-shrink-0"><VerifiedBadge /></span>}
             </div>
             {timeStr && <span className="text-xs text-zinc-500 flex-shrink-0 ml-2">{timeStr}</span>}
           </div>
