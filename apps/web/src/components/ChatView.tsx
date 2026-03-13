@@ -35,6 +35,17 @@ import ConfirmModal from './ConfirmModal';
 import Avatar from './Avatar';
 import { useThemeStore } from '../stores/themeStore';
 
+function VerifiedBadge({ size = 14 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 22 22" fill="none" style={{ width: size, height: size, flexShrink: 0, display: "inline-block" }}>
+      <path d="M11 2L13.5 4.5L17 4L18 7.5L21 9.5L20 13L22 16L19 17.5L18 21L14.5 20L11 22L7.5 20L4 21L3 17.5L0 16L2 13L1 9.5L4 7.5L5 4L8.5 4.5L11 2Z" fill="#2B82CD"/>
+      <path d="M7 11L10 14L15 9" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+
+
 export default function ChatView({ onStartCall, onStartGroupCall }: { onStartCall?: (targetUser: UserBasic, type: 'voice' | 'video') => void; onStartGroupCall?: (chatId: string, chatName: string, type: 'voice' | 'video') => void }) {
   const { user } = useAuthStore();
   const { t, lang } = useLang();
@@ -272,7 +283,7 @@ export default function ChatView({ onStartCall, onStartGroupCall }: { onStartCal
             className="w-28 h-28 mx-auto mb-8 rounded-[2rem] bg-gradient-to-br from-vortex-500/20 to-purple-600/20 flex items-center justify-center shadow-[0_0_60px_-15px_var(--color-accent)] ring-1 ring-white/10 backdrop-blur-2xl relative"
           >
             <div className="absolute inset-0 rounded-[2rem] bg-gradient-to-br from-white/[0.05] to-transparent pointer-events-none" />
-            <img src="/zync.svg" alt="Zync" className="w-16 h-16 rounded-2xl object-cover shadow-2xl transform hover:scale-105 transition-transform" />
+            <img src="/logo.png" alt="Vortex" className="w-16 h-16 rounded-2xl object-cover shadow-2xl transform hover:scale-105 transition-transform" />
           </motion.div>
           <motion.h2
             initial={{ y: 20, opacity: 0 }}
@@ -280,7 +291,7 @@ export default function ChatView({ onStartCall, onStartGroupCall }: { onStartCal
             transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
             className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-vortex-400 via-fuchsia-400 to-indigo-400 mb-4 drop-shadow-lg tracking-tight"
           >
-            Zync Messenger
+            Vortex Messenger
           </motion.h2>
           <motion.p
             initial={{ y: 20, opacity: 0 }}
@@ -466,7 +477,7 @@ export default function ChatView({ onStartCall, onStartGroupCall }: { onStartCal
               )}
             </div>
             <div className="min-w-0 text-left">
-              <h3 className="text-base font-semibold text-white truncate drop-shadow-sm group-hover:text-accent/90 transition-colors">{chatName}</h3>
+              <h3 className="text-base font-semibold text-white truncate drop-shadow-sm group-hover:text-accent/90 transition-colors flex items-center gap-1.5">{chatName}{chat?.type === 'personal' && otherMember?.user.isVerified && <VerifiedBadge size={16}/>}</h3>
               <p className="text-xs text-zinc-400 truncate">
                 {isFavorites
                   ? t('favoritesDescription')

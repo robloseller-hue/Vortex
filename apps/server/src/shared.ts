@@ -28,6 +28,7 @@ export const SENDER_SELECT = {
   username: true,
   displayName: true,
   avatar: true,
+  isVerified: true,
 } as const;
 
 /** Full message include for API responses */

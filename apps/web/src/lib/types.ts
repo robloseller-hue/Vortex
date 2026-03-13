@@ -58,6 +58,7 @@ export interface MessageSender {
   username: string;
   displayName: string;
   avatar?: string | null;
+  isVerified?: boolean;
 }
 
 export interface Message {

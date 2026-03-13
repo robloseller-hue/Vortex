@@ -27,6 +27,17 @@ import { extractWaveform } from '../lib/utils';
 import type { Message, MediaItem, Reaction, ChatMember } from '../lib/types';
 import ImageLightbox from './ImageLightbox';
 
+function VerifiedBadge({ size = 13 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 22 22" fill="none" style={{ width: size, height: size, flexShrink: 0, display: "inline-block", verticalAlign: "middle" }}>
+      <path d="M11 2L13.5 4.5L17 4L18 7.5L21 9.5L20 13L22 16L19 17.5L18 21L14.5 20L11 22L7.5 20L4 21L3 17.5L0 16L2 13L1 9.5L4 7.5L5 4L8.5 4.5L11 2Z" fill="#2B82CD"/>
+      <path d="M7 11L10 14L15 9" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+
+
 interface MessageBubbleProps {
   message: Message;
   isMine: boolean;
@@ -398,10 +409,10 @@ function MessageBubble({
           {/* Имя отправителя (для групп) */}
           {!isMine && showAvatar && (
             <button
-              className="text-xs font-medium text-vortex-400 ml-3 mb-0.5 hover:underline"
+              className="text-xs font-medium text-vortex-400 ml-3 mb-0.5 hover:underline flex items-center gap-1"
               onClick={() => onViewProfile?.(message.senderId)}
             >
-              {senderName}
+              {senderName}{message.sender?.isVerified && <VerifiedBadge />}
             </button>
           )}
 

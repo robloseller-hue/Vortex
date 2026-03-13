@@ -224,6 +224,7 @@ export default function UserProfile({ userId, chatId, onClose, isSelf }: UserPro
               {/* Имя */}
               <h3 className="mt-5 text-[28px] font-bold text-transparent bg-clip-text bg-gradient-to-b from-white to-white/70 tracking-tight text-center px-4">
                 {profile.displayName || profile.username}
+                {profile.isVerified && <VerifiedBadge />}
               </h3>
 
               {/* Username (неизменяемый) */}
