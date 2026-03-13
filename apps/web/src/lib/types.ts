@@ -10,6 +10,7 @@ export interface UserBasic {
 export interface UserPresence extends UserBasic {
   isOnline: boolean;
   lastSeen: string;
+  isVerified?: boolean;
 }
 
 export interface User extends UserPresence {
@@ -17,6 +18,7 @@ export interface User extends UserPresence {
   birthday: string | null;
   createdAt: string;
   hideStoryViews?: boolean;
+  isVerified?: boolean;
 }
 
 // ─── Chat types ────────────────────────────────────────────────────────
