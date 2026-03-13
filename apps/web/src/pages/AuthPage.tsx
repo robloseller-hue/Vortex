@@ -66,12 +66,12 @@ export default function AuthPage() {
               transition={{ duration: 0.6, type: 'spring', bounce: 0.4 }}
             >
               <img
-                src="/zync.svg"
+                src="/logo.png"
                 alt="Zync"
                 className="w-20 h-20 rounded-2xl shadow-lg shadow-vortex-500/30 object-cover"
               />
             </motion.div>
-            <h1 className="text-2xl font-bold gradient-text mt-4">Vortex</h1>
+            <h1 className="text-2xl font-bold gradient-text mt-4">Zync</h1>
             <p className="text-zinc-500 text-sm mt-1">{t('modernMessengerShort')}</p>
           </div>
 
