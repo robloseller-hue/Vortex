@@ -1040,8 +1040,8 @@ export function setupSocket(io: Server) {
         }
       }
       for (const peerId of peerIds) {
-        const peerSocket = userSockets.get(peerId);
-        if (peerSocket) io.to(peerSocket).emit(event, payload);
+        const peerSockets = onlineUsers.get(peerId);
+        if (peerSockets) peerSockets.forEach(sid => io.to(sid).emit(event, payload));
       }
     }
 
