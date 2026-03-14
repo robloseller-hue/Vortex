@@ -605,4 +605,28 @@ router.post('/:id/pin', async (req: AuthRequest, res) => {
   }
 });
 
+// ── Generate invite link for group ───────────────────────────────────
+router.post('/:id/invite', async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+    const chat = await prisma.chat.findFirst({ where: { id, type: 'group', members: { some: { userId: req.userId! } } } });
+    if (!chat) { res.status(404).json({ error: 'Чат не найден' }); return; }
+    const code = Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10);
+    const updated = await prisma.chat.update({ where: { id }, data: { inviteCode: code } });
+    res.json({ inviteCode: code, inviteUrl: `/invite/${code}` });
+  } catch { res.status(500).json({ error: 'Ошибка сервера' }); }
+});
+
+// ── Join by invite code ────────────────────────────────────────────────
+router.post('/join/:code', async (req: AuthRequest, res) => {
+  try {
+    const chat = await prisma.chat.findUnique({ where: { inviteCode: req.params.code } });
+    if (!chat) { res.status(404).json({ error: 'Ссылка недействительна' }); return; }
+    const exists = await prisma.chatMember.findUnique({ where: { chatId_userId: { chatId: chat.id, userId: req.userId! } } });
+    if (exists) { res.json({ chat, alreadyMember: true }); return; }
+    await prisma.chatMember.create({ data: { chatId: chat.id, userId: req.userId! } });
+    res.json({ chat, alreadyMember: false });
+  } catch { res.status(500).json({ error: 'Ошибка сервера' }); }
+});
+
 export default router;

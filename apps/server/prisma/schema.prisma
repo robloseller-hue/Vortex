@@ -64,7 +64,8 @@ model Chat {
   type      String   @default("personal")
   name      String?
   avatar    String?
-  createdAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  inviteCode String?  @unique
 
   members        ChatMember[]
   messages       Message[]

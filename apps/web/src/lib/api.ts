@@ -9,7 +9,7 @@ class ApiClient {
     this.token = token;
   }
 
-  private async request<T>(endpoint: string, options: RequestInit & { timeout?: number } = {}): Promise<T> {
+  async request<T>(endpoint: string, options: RequestInit & { timeout?: number } = {}): Promise<T> {
     const { timeout = 30_000, ...fetchOptions } = options;
     const controller = new AbortController();
     const timer = timeout > 0 ? setTimeout(() => controller.abort(), timeout) : undefined;

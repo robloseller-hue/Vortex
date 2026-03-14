@@ -1,11 +1,19 @@
+import { getUserLink } from '../lib/deepLinks';
 import { useState, useEffect, useCallback } from 'react';
+import { getUserLink } from '../lib/deepLinks';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getUserLink } from '../lib/deepLinks';
 import { X, Calendar, AtSign, Edit3, Check, Loader2, Image as ImageIcon, FileText, Link as LinkIcon, Download, ExternalLink, Play, UserPlus, UserMinus, UserCheck, Clock } from 'lucide-react';
+import { getUserLink } from '../lib/deepLinks';
 import { api } from '../lib/api';
+import { getUserLink } from '../lib/deepLinks';
 import { useAuthStore } from '../stores/authStore';
+import { getUserLink } from '../lib/deepLinks';
 import { useLang } from '../lib/i18n';
+import { getUserLink } from '../lib/deepLinks';
 import { User, Message, FriendshipStatus } from '../lib/types';
 import ImageLightbox from './ImageLightbox';
+import { getUserLink } from '../lib/deepLinks';
 import { getSocket } from '../lib/socket';
 
 function VerifiedBadge() {
@@ -31,20 +39,31 @@ type MediaTab = 'media' | 'files' | 'links';
 export default function UserProfile({ userId, chatId, onClose, isSelf }: UserProfileProps) {
   const { user: authUser } = useAuthStore();
   const { t, lang } = useLang();
+  const [copied, setCopied] = useState(false);
   const [profile, setProfile] = useState<User | null>(null);
+  const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<MediaTab>('media');
 
   // Shared media state
+  const [copied, setCopied] = useState(false);
   const [sharedMedia, setSharedMedia] = useState<Message[]>([]);
+  const [copied, setCopied] = useState(false);
   const [sharedFiles, setSharedFiles] = useState<Message[]>([]);
+  const [copied, setCopied] = useState(false);
   const [sharedLinks, setSharedLinks] = useState<Array<Message & { links?: string[] }>>([]);
+  const [copied, setCopied] = useState(false);
   const [tabLoading, setTabLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [loadedTabs, setLoadedTabs] = useState<Set<MediaTab>>(new Set());
+  const [copied, setCopied] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   // Friend state
+  const [copied, setCopied] = useState(false);
   const [friendStatus, setFriendStatus] = useState<FriendshipStatus | null>(null);
+  const [copied, setCopied] = useState(false);
   const [friendLoading, setFriendLoading] = useState(false);
 
   useEffect(() => {
@@ -229,10 +248,20 @@ export default function UserProfile({ userId, chatId, onClose, isSelf }: UserPro
                 {profile.isVerified && <VerifiedBadge />}
               </div>
 
-              {/* Username (неизменяемый) */}
-              <div className="flex items-center gap-1.5 mt-2.5 bg-vortex-500/10 hover:bg-vortex-500/20 transition-colors px-4 py-1.5 rounded-full border border-vortex-500/20 backdrop-blur-sm cursor-default">
-                <AtSign size={14} className="text-vortex-400" />
-                <span className="text-sm font-semibold text-vortex-100">{profile.username}</span>
+              {/* Username + copy link */}
+              <div className="flex items-center gap-2 mt-2.5">
+                <div className="flex items-center gap-1.5 bg-vortex-500/10 hover:bg-vortex-500/20 transition-colors px-4 py-1.5 rounded-full border border-vortex-500/20 backdrop-blur-sm cursor-default">
+                  <AtSign size={14} className="text-vortex-400" />
+                  <span className="text-sm font-semibold text-vortex-100">{profile.username}</span>
+                </div>
+                <button onClick={copyProfileLink}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-all text-zinc-400 hover:text-white"
+                  title="Скопировать ссылку">
+                  {copied
+                    ? <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 text-green-400"><polyline points="20 6 9 17 4 12"/></svg><span className="text-xs text-green-400">Скопировано</span></>
+                    : <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><span className="text-xs">Ссылка</span></>
+                  }
+                </button>
               </div>
 
               {/* Онлайн статус */}

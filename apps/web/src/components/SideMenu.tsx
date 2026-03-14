@@ -34,6 +34,7 @@ import { useChatStore } from '../stores/chatStore';
 import { api } from '../lib/api';
 import { getSocket } from '../lib/socket';
 import { useLang } from '../lib/i18n';
+import { getUserLink } from '../lib/deepLinks';
 import { useThemeStore, type ChatTheme, type FontSize, type BubbleSize, type ColorScheme } from '../stores/themeStore';
 import DatePicker from './DatePicker';
 import type { User as UserType, UserPresence, FriendRequest, FriendWithId } from '../lib/types';
@@ -510,10 +511,24 @@ export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
             </h3>
           )}
 
-          {/* Username badge */}
-          <div className="flex items-center gap-1.5 mt-2 bg-vortex-500/10 hover:bg-vortex-500/20 transition-colors px-3.5 py-1.5 rounded-full border border-vortex-500/20 backdrop-blur-sm cursor-default">
-            <AtSign size={13} className="text-vortex-400" />
-            <span className="text-sm font-semibold text-vortex-100">{user?.username}</span>
+          {/* Username badge + copy link */}
+          <div className="flex items-center gap-2 mt-2">
+            <div className="flex items-center gap-1.5 bg-vortex-500/10 px-3.5 py-1.5 rounded-full border border-vortex-500/20 cursor-default">
+              <AtSign size={13} className="text-vortex-400" />
+              <span className="text-sm font-semibold text-vortex-100">{user?.username}</span>
+            </div>
+            <button
+              onClick={() => {
+                if (user?.username) {
+                  navigator.clipboard.writeText(getUserLink(user.username));
+                }
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-all text-zinc-400 hover:text-white text-xs"
+              title="Скопировать ссылку на профиль"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              Моя ссылка
+            </button>
           </div>
         </div>
 

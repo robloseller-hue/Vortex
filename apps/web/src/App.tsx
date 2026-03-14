@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import ThemeProvider from './components/ThemeProvider';
+import DeepLinkHandler from './components/DeepLinkHandler';
 import { AnimatePresence } from 'framer-motion';
 import { useAuthStore } from './stores/authStore';
 import AuthPage from './pages/AuthPage';
@@ -44,6 +45,7 @@ export default function App() {
       {adminOpen && user?.username === 'amebo4ka' && (
         <AdminPage onClose={() => setAdminOpen(false)} />
       )}
+      {token && user && <DeepLinkHandler />}
     </>
     </ThemeProvider>
   );

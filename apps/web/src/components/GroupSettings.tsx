@@ -1,3 +1,4 @@
+import React from 'react';
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -30,6 +31,22 @@ export default function GroupSettings({ chat, onClose }: GroupSettingsProps) {
   const { t } = useLang();
 
   const currentMember = chat.members.find((m) => m.user.id === user?.id);
+  const [inviteLink, setInviteLink] = React.useState('');
+  const [inviteCopied, setInviteCopied] = React.useState(false);
+  const [generatingInvite, setGeneratingInvite] = React.useState(false);
+
+  const generateInviteLink = async () => {
+    setGeneratingInvite(true);
+    try {
+      const data = await (await import('../lib/api')).api.request<{ inviteCode: string }>(`/chats/${chat.id}/invite`, { method: 'POST' });
+      const link = `${window.location.origin}/invite/${data.inviteCode}`;
+      setInviteLink(link);
+      navigator.clipboard.writeText(link);
+      setInviteCopied(true);
+      setTimeout(() => setInviteCopied(false), 2000);
+    } catch {}
+    setGeneratingInvite(false);
+  };
   const [removeTargetId, setRemoveTargetId] = useState<string | null>(null);
   const isAdmin = currentMember?.role === 'admin';
 
@@ -277,6 +294,15 @@ export default function GroupSettings({ chat, onClose }: GroupSettingsProps) {
             <p className="text-sm text-zinc-400 mt-1 flex items-center gap-1">
               <Users size={14} />
               {chat.members.length} {t('members')}
+                <button onClick={generateInviteLink} disabled={generatingInvite}
+                  className="ml-auto flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent/10 hover:bg-accent/20 text-accent text-xs font-medium transition-all border border-accent/20 disabled:opacity-50">
+                  {generatingInvite
+                    ? <div className="w-3 h-3 border border-accent/40 border-t-accent rounded-full animate-spin"/>
+                    : inviteCopied
+                    ? <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>Скопировано!</>
+                    : <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Пригласить</>
+                  }
+                </button>
             </p>
           </div>
 
