@@ -40,6 +40,8 @@ model User {
   friendshipsSent      Friendship[] @relation("FriendshipsSent")
   friendshipsReceived  Friendship[] @relation("FriendshipsReceived")
   sessions             Session[]
+  blocksSent           Block[]      @relation("BlocksSent")
+  blocksReceived       Block[]      @relation("BlocksReceived")
 }
 
 model Session {
@@ -218,4 +220,16 @@ model Friendship {
   friend User @relation("FriendshipsReceived", fields: [friendId], references: [id], onDelete: Cascade)
 
   @@unique([userId, friendId])
+}
+
+model Block {
+  id        String   @id @default(uuid())
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+
+  blocker User @relation("BlocksSent", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked User @relation("BlocksReceived", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
 }

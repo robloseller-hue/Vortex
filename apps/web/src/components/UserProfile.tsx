@@ -48,9 +48,12 @@ export default function UserProfile({ userId, chatId, onClose, isSelf }: UserPro
   // Friend state
   const [friendStatus, setFriendStatus] = useState<FriendshipStatus | null>(null);
   const [friendLoading, setFriendLoading] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [blockLoading, setBlockLoading] = useState(false);
 
   useEffect(() => {
     loadProfile();
+    loadBlockStatus();
     if (!isSelf) {
       api.getFriendshipStatus(userId).then(setFriendStatus).catch(() => {});
     }
@@ -83,6 +86,28 @@ export default function UserProfile({ userId, chatId, onClose, isSelf }: UserPro
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
+  };
+
+  const loadBlockStatus = async () => {
+    if (isSelf) return;
+    try {
+      const { iBlocked } = await api.checkBlock(userId);
+      setIsBlocked(iBlocked);
+    } catch {}
+  };
+
+  const handleToggleBlock = async () => {
+    setBlockLoading(true);
+    try {
+      if (isBlocked) {
+        await api.unblockUser(userId);
+        setIsBlocked(false);
+      } else {
+        await api.blockUser(userId);
+        setIsBlocked(true);
+      }
+    } catch {}
+    setBlockLoading(false);
   };
 
   const loadProfile = async () => {
@@ -318,6 +343,27 @@ export default function UserProfile({ userId, chatId, onClose, isSelf }: UserPro
                       {t('removeFriend')}
                     </button>
                   )}
+                </div>
+              )}
+
+              {/* Block button */}
+              {!isSelf && (
+                <div className="mt-3">
+                  <button
+                    onClick={handleToggleBlock}
+                    disabled={blockLoading}
+                    className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-medium transition-all border ${
+                      isBlocked
+                        ? 'bg-zinc-500/10 border-zinc-500/20 text-zinc-400 hover:bg-zinc-500/20'
+                        : 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20'
+                    }`}
+                  >
+                    {blockLoading
+                      ? <Loader2 size={14} className="animate-spin" />
+                      : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                    }
+                    {isBlocked ? 'Разблокировать' : 'Заблокировать'}
+                  </button>
                 </div>
               )}
             </div>

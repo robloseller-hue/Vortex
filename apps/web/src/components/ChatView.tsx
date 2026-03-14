@@ -61,6 +61,8 @@ export default function ChatView({ onStartCall, onStartGroupCall }: { onStartCal
   } = useChatStore();
 
   const [showTopMenu, setShowTopMenu] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [blockLoading, setBlockLoading] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [searchResults, setSearchResults] = useState<Message[]>([]);
@@ -94,6 +96,28 @@ export default function ChatView({ onStartCall, onStartGroupCall }: { onStartCal
   ).length;
 
   const otherMember = chat?.members.find((m) => m.user.id !== user?.id);
+
+  useEffect(() => {
+    if (chat?.type === 'personal' && otherMember) {
+      api.checkBlock(otherMember.user.id).then(({ iBlocked }) => setIsBlocked(iBlocked)).catch(() => {});
+    }
+  }, [chat?.id, otherMember?.user.id]);
+
+  const handleToggleBlock = async () => {
+    if (!otherMember) return;
+    setBlockLoading(true);
+    try {
+      if (isBlocked) {
+        await api.unblockUser(otherMember.user.id);
+        setIsBlocked(false);
+      } else {
+        await api.blockUser(otherMember.user.id);
+        setIsBlocked(true);
+      }
+    } catch {}
+    setBlockLoading(false);
+    setShowTopMenu(false);
+  };
   const isFavorites = chat?.type === 'favorites';
   const chatName = isFavorites
     ? t('favorites')
@@ -617,6 +641,19 @@ export default function ChatView({ onStartCall, onStartGroupCall }: { onStartCal
                         <Settings size={16} />
                         {t('groupSettings')}
                       </button>
+                    )}
+                    {chat.type === 'personal' && otherMember && (
+                      <>
+                        <div className="border-t border-border my-1" />
+                        <button
+                          onClick={handleToggleBlock}
+                          disabled={blockLoading}
+                          className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors disabled:opacity-50"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                          {blockLoading ? 'Загрузка...' : isBlocked ? 'Разблокировать' : 'Заблокировать'}
+                        </button>
+                      </>
                     )}
                     <div className="border-t border-border my-1" />
                     <button

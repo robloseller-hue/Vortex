@@ -133,6 +133,29 @@ export function setupSocket(io: Server) {
           return;
         }
 
+        // Block check — find other member in personal chat
+        const chatInfo = await prisma.chat.findUnique({
+          where: { id: data.chatId },
+          include: { members: { select: { userId: true } } },
+        });
+        if (chatInfo?.type === 'personal') {
+          const otherId = chatInfo.members.find(m => m.userId !== userId)?.userId;
+          if (otherId) {
+            const block = await prisma.block.findFirst({
+              where: {
+                OR: [
+                  { blockerId: userId, blockedId: otherId },
+                  { blockerId: otherId, blockedId: userId },
+                ],
+              },
+            });
+            if (block) {
+              socket.emit('error', { message: 'Невозможно отправить сообщение' });
+              return;
+            }
+          }
+        }
+
         // Validate message type
         const VALID_TYPES = ['text', 'image', 'video', 'voice', 'file', 'gif'];
         const msgType = data.type || 'text';
@@ -996,6 +1019,32 @@ export function setupSocket(io: Server) {
     });
 
     // Отключение
+    // Helper: broadcast online status only to non-blocking users
+    async function emitPresence(event: string, payload: object) {
+      // Find all users who have NOT blocked this user and are NOT blocked by this user
+      const blocks = await prisma.block.findMany({
+        where: { OR: [{ blockerId: userId }, { blockedId: userId }] },
+        select: { blockerId: true, blockedId: true },
+      });
+      const blockedUserIds = new Set(blocks.map(b => b.blockerId === userId ? b.blockedId : b.blockerId));
+
+      // Get all online users in same chats
+      const userChats = await prisma.chatMember.findMany({
+        where: { userId },
+        select: { chatId: true, chat: { select: { members: { select: { userId: true } } } } },
+      });
+      const peerIds = new Set<string>();
+      for (const cm of userChats) {
+        for (const m of cm.chat.members) {
+          if (m.userId !== userId && !blockedUserIds.has(m.userId)) peerIds.add(m.userId);
+        }
+      }
+      for (const peerId of peerIds) {
+        const peerSocket = userSockets.get(peerId);
+        if (peerSocket) io.to(peerSocket).emit(event, payload);
+      }
+    }
+
     socket.on('disconnect', async () => {
       console.log(`Пользователь отключился: ${userId}`);
 

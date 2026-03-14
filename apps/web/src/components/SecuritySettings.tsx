@@ -48,6 +48,8 @@ export default function SecuritySettings({ onBack }: Props) {
   const [disablePassword, setDisablePassword] = useState('');
   const [working, setWorking] = useState(false);
   const [msg, setMsg] = useState<{ text: string; type: 'error' | 'success' } | null>(null);
+  const [blockedUsers, setBlockedUsers] = useState<{ id: string; blockedId: string; blocked: { id: string; username: string; displayName: string; avatar?: string } }[]>([]);
+  const [showBlocked, setShowBlocked] = useState(false);
 
   const token = localStorage.getItem('zync_token') || localStorage.getItem('vortex_token') || '';
   const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
@@ -57,6 +59,12 @@ export default function SecuritySettings({ onBack }: Props) {
       const res = await fetch('/api/auth/sessions', { headers });
       const data = await res.json();
       setSessions(data.sessions || []);
+      try {
+        const token2 = localStorage.getItem('zync_token') || localStorage.getItem('vortex_token') || '';
+        const blocksRes = await fetch('/api/blocks', { headers: { 'Authorization': `Bearer ${token2}` } });
+        const blocksData = await blocksRes.json();
+        setBlockedUsers(Array.isArray(blocksData) ? blocksData : []);
+      } catch {}
       setTwoFa(data.twoFa || { enabled: false, email: null });
     } catch {}
     setLoading(false);

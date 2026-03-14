@@ -292,6 +292,20 @@ class ApiClient {
   async removeFriend(friendshipId: string) {
     return this.request<{ success: boolean }>(`/friends/${friendshipId}`, { method: 'DELETE' });
   }
+
+  // ── Блокировка ───────────────────────────────────────────────────────
+  async getBlocks() {
+    return this.request<{ id: string; blockedId: string; blocked: { id: string; username: string; displayName: string; avatar?: string } }[]>('/blocks');
+  }
+  async blockUser(userId: string) {
+    return this.request<{ blocked: boolean }>(`/blocks/${userId}`, { method: 'POST' });
+  }
+  async unblockUser(userId: string) {
+    return this.request<{ blocked: boolean }>(`/blocks/${userId}`, { method: 'DELETE' });
+  }
+  async checkBlock(userId: string) {
+    return this.request<{ iBlocked: boolean; theyBlocked: boolean }>(`/blocks/check/${userId}`);
+  }
 }
 
 export const api = new ApiClient();
