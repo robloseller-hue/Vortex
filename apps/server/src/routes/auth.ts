@@ -249,7 +249,8 @@ router.get('/sessions', authenticateToken, async (req: AuthRequest, res) => {
 // ── Revoke one session ────────────────────────────────────────────────
 router.delete('/sessions/:id', authenticateToken, async (req: AuthRequest, res) => {
   try {
-    const session = await prisma.session.findFirst({ where: { id: req.params.id, userId: req.userId! } });
+    const sessionId = String(req.params.id);
+    const session = await prisma.session.findFirst({ where: { id: sessionId, userId: req.userId! } });
     if (!session) { res.status(404).json({ error: 'Не найдена' }); return; }
     if (session.isCurrent) { res.status(400).json({ error: 'Нельзя завершить текущую сессию' }); return; }
     await prisma.session.delete({ where: { id: session.id } });
