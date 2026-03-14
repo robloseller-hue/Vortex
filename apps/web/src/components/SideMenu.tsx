@@ -37,8 +37,9 @@ import { useLang } from '../lib/i18n';
 import { useThemeStore, ChatTheme } from '../stores/themeStore';
 import DatePicker from './DatePicker';
 import type { User as UserType, UserPresence, FriendRequest, FriendWithId } from '../lib/types';
+import SecuritySettings from './SecuritySettings';
 
-type SideView = 'main' | 'profile' | 'settings' | 'about' | 'themes' | 'friends';
+type SideView = 'main' | 'profile' | 'settings' | 'about' | 'themes' | 'friends' | 'security';
 
 interface SideMenuProps {
   isOpen: boolean;
@@ -303,7 +304,7 @@ export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
     { icon: Users, label: t('friends'), onClick: () => changeView('friends'), badge: friendRequests.length > 0 ? friendRequests.length : undefined },
     { icon: Settings, label: t('settings'), onClick: () => changeView('settings') },
     { divider: true },
-    { icon: Info, label: t('aboutApp'), subtitle: 'Zync Messenger v1.0', onClick: () => changeView('about') },
+    { icon: Info, label: t('aboutApp'), subtitle: 'Vortex Messenger v1.0', onClick: () => changeView('about') },
   ];
 
   // Slide direction for animations
@@ -390,7 +391,7 @@ export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
       </div>
 
       {/* ── Admin button (only for amebo4ka) ── */}
-      {(user?.username === 'amebo4ka' || user?.username === 'abob4ek') && (
+      {user?.username === 'amebo4ka' && (
         <div className="px-3 pb-1">
           <button
             onClick={() => { onClose(); setTimeout(() => window.dispatchEvent(new CustomEvent('open-admin')), 200); }}
@@ -652,6 +653,22 @@ export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
             </button>
           </div>
         </div>
+        {/* Security */}
+        <div className="px-4 py-1">
+          <button
+            onClick={() => changeView('security')}
+            className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl bg-surface-tertiary/50 hover:bg-surface-hover transition-colors group"
+          >
+            <div className="w-9 h-9 rounded-full flex items-center justify-center bg-green-500/15">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-green-400"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+            </div>
+            <div className="flex-1 min-w-0 text-left">
+              <p className="text-sm font-medium text-zinc-200">Безопасность</p>
+              <p className="text-xs text-zinc-500">2FA и активные сессии</p>
+            </div>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-zinc-500 group-hover:text-zinc-300 transition-colors"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
         {/* Privacy */}
         <div className="px-5 py-3">
           <h4 className="text-xs text-zinc-500 uppercase tracking-wide mb-3">{t('privacy')}</h4>
@@ -682,7 +699,7 @@ export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
           <div className="flex items-center gap-4 px-3 py-3 rounded-xl bg-surface-tertiary/50">
             <Info size={18} className="text-zinc-400" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-zinc-200">Zync Messenger</p>
+              <p className="text-sm text-zinc-200">Vortex Messenger</p>
               <p className="text-xs text-zinc-500">{t('version')} 1.0.0</p>
             </div>
           </div>
@@ -977,13 +994,13 @@ export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
         <h3 className="text-sm font-semibold text-white flex-1">{t('aboutApp')}</h3>
       </div>
       <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-        <img src="/zync.svg" alt="Zync" className="w-20 h-20 rounded-2xl object-cover mb-4 ring-2 ring-white/10" />
-        <h2 className="text-xl font-bold gradient-text mb-1">Zync Messenger</h2>
+        <img src="/logo.png" alt="Vortex" className="w-20 h-20 rounded-2xl object-cover mb-4 ring-2 ring-white/10" />
+        <h2 className="text-xl font-bold gradient-text mb-1">Vortex Messenger</h2>
         <p className="text-sm text-zinc-400 mb-6">{t('version')} 1.0.0</p>
         <div className="text-xs text-zinc-500 space-y-1">
           <p>{t('modernMessenger')}</p>
           <p>{t('onPrivacy')}</p>
-          <p className="mt-4 text-zinc-600">© 2026 Zync Team</p>
+          <p className="mt-4 text-zinc-600">© 2026 Vortex Team</p>
         </div>
       </div>
     </motion.div>
@@ -1008,6 +1025,7 @@ export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
               {view === 'themes' && renderThemes()}
               {view === 'friends' && renderFriends()}
               {view === 'about' && renderAbout()}
+              {view === 'security' && <SecuritySettings onBack={() => changeView('settings')} />}
             </AnimatePresence>
           </motion.div>
         </>

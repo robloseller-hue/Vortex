@@ -3,20 +3,29 @@ import { api } from '../lib/api';
 import { connectSocket, disconnectSocket } from '../lib/socket';
 import type { User } from '../lib/types';
 
+interface TwoFaResult {
+  twoFaRequired: true;
+  userId: string;
+  emailHint: string;
+}
+
 interface AuthState {
   token: string | null;
   user: User | null;
   isLoading: boolean;
   error: string | null;
-  login: (username: string, password: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<TwoFaResult | void>;
+  loginWithToken: (token: string, user: User) => Promise<void>;
   register: (username: string, displayName: string, password: string, bio?: string) => Promise<void>;
   logout: () => void;
   checkAuth: () => Promise<void>;
   updateUser: (data: Partial<User>) => void;
 }
 
+const TOKEN_KEY = 'zync_token';
+
 export const useAuthStore = create<AuthState>((set, get) => ({
-  token: localStorage.getItem('zync_token'),
+  token: localStorage.getItem(TOKEN_KEY),
   user: null,
   isLoading: true,
   error: null,
@@ -24,11 +33,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async (username, password) => {
     try {
       set({ error: null, isLoading: true });
-      const { token, user } = await api.login(username, password);
-      localStorage.setItem('zync_token', token);
-      api.setToken(token);
-      connectSocket(token);
-      set({ token, user, isLoading: false });
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Ошибка входа');
+
+      // 2FA required
+      if (data.twoFaRequired) {
+        set({ isLoading: false });
+        return { twoFaRequired: true, userId: data.userId, emailHint: data.emailHint };
+      }
+
+      localStorage.setItem(TOKEN_KEY, data.token);
+      api.setToken(data.token);
+      connectSocket(data.token);
+      set({ token: data.token, user: data.user, isLoading: false });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       set({ error: msg, isLoading: false });
@@ -36,11 +58,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
+  loginWithToken: async (token, user) => {
+    localStorage.setItem(TOKEN_KEY, token);
+    api.setToken(token);
+    connectSocket(token);
+    set({ token, user, isLoading: false });
+  },
+
   register: async (username, displayName, password, bio) => {
     try {
       set({ error: null, isLoading: true });
       const { token, user } = await api.register(username, displayName, password, bio);
-      localStorage.setItem('zync_token', token);
+      localStorage.setItem(TOKEN_KEY, token);
       api.setToken(token);
       connectSocket(token);
       set({ token, user, isLoading: false });
@@ -52,7 +81,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: () => {
-    localStorage.removeItem('zync_token');
+    localStorage.removeItem(TOKEN_KEY);
     api.setToken(null);
     disconnectSocket();
     set({ token: null, user: null });
@@ -60,12 +89,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   checkAuth: async () => {
     const token = get().token;
-    if (!token) {
-      set({ isLoading: false });
-      return;
-    }
-
-    // Retry up to 3 times in case server is still starting
+    if (!token) { set({ isLoading: false }); return; }
     let lastError: unknown;
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
@@ -76,25 +100,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return;
       } catch (err) {
         lastError = err;
-        // Only retry on network/server errors, not on auth errors (401/403)
         const msg = err instanceof Error ? err.message : '';
-        if (msg.includes('Требуется авторизация') || msg.includes('Недействительный токен')) {
-          break;
-        }
-        if (attempt < 2) {
-          await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
-        }
+        if (msg.includes('Требуется авторизация') || msg.includes('Недействительный токен')) break;
+        if (attempt < 2) await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
       }
     }
     console.warn('checkAuth failed:', lastError);
-    localStorage.removeItem('zync_token');
+    localStorage.removeItem(TOKEN_KEY);
     set({ token: null, user: null, isLoading: false });
   },
 
   updateUser: (data) => {
     const { user } = get();
-    if (user) {
-      set({ user: { ...user, ...data } });
-    }
+    if (user) set({ user: { ...user, ...data } });
   },
 }));
