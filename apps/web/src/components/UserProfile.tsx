@@ -77,6 +77,14 @@ export default function UserProfile({ userId, chatId, onClose, isSelf }: UserPro
     loadTabData(activeTab);
   }, [activeTab, loadTabData]);
 
+  const copyProfileLink = () => {
+    if (profile?.username) {
+      navigator.clipboard.writeText(getUserLink(profile.username));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
   const loadProfile = async () => {
     try {
       setIsLoading(true);
