@@ -1,19 +1,12 @@
-import { getUserLink } from '../lib/deepLinks';
 import { useState, useEffect, useCallback } from 'react';
 import { getUserLink } from '../lib/deepLinks';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getUserLink } from '../lib/deepLinks';
 import { X, Calendar, AtSign, Edit3, Check, Loader2, Image as ImageIcon, FileText, Link as LinkIcon, Download, ExternalLink, Play, UserPlus, UserMinus, UserCheck, Clock } from 'lucide-react';
-import { getUserLink } from '../lib/deepLinks';
 import { api } from '../lib/api';
-import { getUserLink } from '../lib/deepLinks';
 import { useAuthStore } from '../stores/authStore';
-import { getUserLink } from '../lib/deepLinks';
 import { useLang } from '../lib/i18n';
-import { getUserLink } from '../lib/deepLinks';
 import { User, Message, FriendshipStatus } from '../lib/types';
 import ImageLightbox from './ImageLightbox';
-import { getUserLink } from '../lib/deepLinks';
 import { getSocket } from '../lib/socket';
 
 function VerifiedBadge() {
@@ -41,29 +34,19 @@ export default function UserProfile({ userId, chatId, onClose, isSelf }: UserPro
   const { t, lang } = useLang();
   const [copied, setCopied] = useState(false);
   const [profile, setProfile] = useState<User | null>(null);
-  const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<MediaTab>('media');
 
   // Shared media state
-  const [copied, setCopied] = useState(false);
   const [sharedMedia, setSharedMedia] = useState<Message[]>([]);
-  const [copied, setCopied] = useState(false);
   const [sharedFiles, setSharedFiles] = useState<Message[]>([]);
-  const [copied, setCopied] = useState(false);
   const [sharedLinks, setSharedLinks] = useState<Array<Message & { links?: string[] }>>([]);
-  const [copied, setCopied] = useState(false);
   const [tabLoading, setTabLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [loadedTabs, setLoadedTabs] = useState<Set<MediaTab>>(new Set());
-  const [copied, setCopied] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   // Friend state
-  const [copied, setCopied] = useState(false);
   const [friendStatus, setFriendStatus] = useState<FriendshipStatus | null>(null);
-  const [copied, setCopied] = useState(false);
   const [friendLoading, setFriendLoading] = useState(false);
 
   useEffect(() => {
