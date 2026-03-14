@@ -8,32 +8,55 @@ datasource db {
 }
 
 model User {
-  id          String   @id @default(uuid())
-  username    String   @unique
-  displayName String   @default("")
-  email       String?  @unique
-  phone       String?
-  password    String
-  avatar      String?
-  bio         String?
-  birthday    String?
-  createdAt   DateTime @default(now())
-  lastSeen    DateTime @default(now())
-  isOnline    Boolean  @default(false)
-  hideStoryViews Boolean @default(false)
+  id             String    @id @default(uuid())
+  username       String    @unique
+  displayName    String    @default("")
+  email          String?   @unique
+  phone          String?
+  password       String
+  avatar         String?
+  bio            String?
+  birthday       String?
+  createdAt      DateTime  @default(now())
+  lastSeen       DateTime  @default(now())
+  isOnline       Boolean   @default(false)
+  hideStoryViews Boolean   @default(false)
   registrationIp String?
-  isVerified      Boolean  @default(false)
-  themeSettings   Json?
+  isVerified     Boolean   @default(false)
+  themeSettings  Json?
 
-  messages    Message[]
-  chatMembers ChatMember[]
-  reactions   Reaction[]
-  readReceipts ReadReceipt[]
-  forwardedMessages Message[] @relation("ForwardedFrom")
-  stories     Story[]
-  storyViews  StoryView[]
-  friendshipsSent     Friendship[] @relation("FriendshipsSent")
-  friendshipsReceived Friendship[] @relation("FriendshipsReceived")
+  twoFaEnabled   Boolean   @default(false)
+  twoFaEmail     String?
+  twoFaCode      String?
+  twoFaCodeExp   DateTime?
+
+  messages             Message[]
+  chatMembers          ChatMember[]
+  reactions            Reaction[]
+  readReceipts         ReadReceipt[]
+  forwardedMessages    Message[]    @relation("ForwardedFrom")
+  stories              Story[]
+  storyViews           StoryView[]
+  friendshipsSent      Friendship[] @relation("FriendshipsSent")
+  friendshipsReceived  Friendship[] @relation("FriendshipsReceived")
+  sessions             Session[]
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  token        String   @unique
+  deviceName   String?
+  browser      String?
+  os           String?
+  ip           String?
+  country      String?
+  city         String?
+  isCurrent    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  lastActiveAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Chat {
@@ -66,31 +89,31 @@ model ChatMember {
 }
 
 model Message {
-  id        String   @id @default(uuid())
-  chatId    String
-  senderId  String
-  content   String?
-  type      String   @default("text")
-  replyToId String?
-  quote     String?
+  id              String    @id @default(uuid())
+  chatId          String
+  senderId        String
+  content         String?
+  type            String    @default("text")
+  replyToId       String?
+  quote           String?
   forwardedFromId String?
-  isEdited  Boolean  @default(false)
-  isDeleted Boolean  @default(false)
-  scheduledAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  isEdited        Boolean   @default(false)
+  isDeleted       Boolean   @default(false)
+  scheduledAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  chat    Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  sender  User     @relation(fields: [senderId], references: [id])
-  replyTo Message? @relation("Reply", fields: [replyToId], references: [id])
-  replies Message[] @relation("Reply")
-  forwardedFrom User? @relation("ForwardedFrom", fields: [forwardedFromId], references: [id])
+  chat          Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender        User     @relation(fields: [senderId], references: [id])
+  replyTo       Message? @relation("Reply", fields: [replyToId], references: [id])
+  replies       Message[] @relation("Reply")
+  forwardedFrom User?    @relation("ForwardedFrom", fields: [forwardedFromId], references: [id])
 
-  media          Media[]
-  reactions      Reaction[]
-  readBy         ReadReceipt[]
-  pinnedIn       PinnedMessage[]
-  hiddenBy       HiddenMessage[]
+  media        Media[]
+  reactions    Reaction[]
+  readBy       ReadReceipt[]
+  pinnedIn     PinnedMessage[]
+  hiddenBy     HiddenMessage[]
 }
 
 model Media {
@@ -186,7 +209,7 @@ model Friendship {
   id        String   @id @default(uuid())
   userId    String
   friendId  String
-  status    String   @default("pending") // pending | accepted | declined
+  status    String   @default("pending")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
