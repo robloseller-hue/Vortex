@@ -228,11 +228,13 @@ router.post('/2fa/disable', authenticateToken, async (req: AuthRequest, res) => 
 // ── Get sessions ──────────────────────────────────────────────────────
 router.get('/sessions', authenticateToken, async (req: AuthRequest, res) => {
   try {
-    const authHeader = String(req.headers['authorization'] || '');
-    const currentToken = authHeader.replace('Bearer ', '');
-    if (currentToken) {
-      await prisma.session.updateMany({ where: { token: currentToken }, data: { lastActiveAt: new Date(), isCurrent: true } });
-      await prisma.session.updateMany({ where: { userId: req.userId!, NOT: { token: currentToken } }, data: { isCurrent: false } });
+    // Update all sessions for this user - mark all as not current first, then find by userId
+    // We identify current session by looking it up fresh each time
+    await prisma.session.updateMany({ where: { userId: req.userId! }, data: { isCurrent: false } });
+    // Find the most recently active session for this user as "current"
+    const latest = await prisma.session.findFirst({ where: { userId: req.userId! }, orderBy: { lastActiveAt: 'desc' } });
+    if (latest) {
+      await prisma.session.update({ where: { id: latest.id }, data: { lastActiveAt: new Date(), isCurrent: true } });
     }
     const sessions = await prisma.session.findMany({
       where: { userId: req.userId! },
@@ -258,9 +260,13 @@ router.delete('/sessions/:id', authenticateToken, async (req: AuthRequest, res) 
 // ── Revoke all other sessions ─────────────────────────────────────────
 router.delete('/sessions', authenticateToken, async (req: AuthRequest, res) => {
   try {
-    const authHeader = String(req.headers['authorization'] || '');
-    const currentToken = authHeader.replace('Bearer ', '');
-    await prisma.session.deleteMany({ where: { userId: req.userId!, NOT: { token: currentToken } } });
+    // Keep only the most recent (current) session, delete all others
+    const current = await prisma.session.findFirst({ where: { userId: req.userId!, isCurrent: true } });
+    if (current) {
+      await prisma.session.deleteMany({ where: { userId: req.userId!, NOT: { id: current.id } } });
+    } else {
+      await prisma.session.deleteMany({ where: { userId: req.userId! } });
+    }
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: 'Ошибка сервера' }); }
 });
