@@ -51,7 +51,10 @@ async function getGeo(ip: string): Promise<{ country: string; city: string }> {
     if (!ip || ip === '127.0.0.1' || ip === '::1' || ip.startsWith('192.168') || ip.startsWith('10.')) {
       return { country: 'Локальная сеть', city: 'localhost' };
     }
-    const res = await fetch(`http://ip-api.com/json/${ip}?fields=country,city&lang=ru`);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 3000);
+    const res = await fetch(`http://ip-api.com/json/${ip}?fields=country,city&lang=ru`, { signal: controller.signal });
+    clearTimeout(timer);
     if (!res.ok) return { country: '—', city: '—' };
     const data = await res.json() as { country?: string; city?: string };
     return { country: data.country || '—', city: data.city || '—' };
@@ -83,11 +86,20 @@ async function sendEmail(to: string, code: string): Promise<void> {
   const pass = process.env.SMTP_PASS;
   const from = process.env.SMTP_FROM || user || 'noreply@zync.app';
 
+  // Always log code so admin can find it in Railway logs
+  console.log(`\n╔══════════════════════════╗`);
+  console.log(`║  2FA CODE: ${code}`);
+  console.log(`║  FOR: ${to}`);
+  console.log(`╚══════════════════════════╝\n`);
+
   if (!host || !user || !pass) {
-    console.log(`\n[ 2FA CODE for ${to} ]: ${code}\n`);
+    // No SMTP configured - code is in logs above
     return;
   }
-  try {
+
+  // Send with 8s timeout so it never hangs
+  const timeout = new Promise<void>((_, reject) => setTimeout(() => reject(new Error('Email timeout')), 8000));
+  const send = (async () => {
     const nodemailer = await import('nodemailer');
     const transport = nodemailer.createTransport({ host, port, secure: port === 465, auth: { user, pass } });
     await transport.sendMail({
@@ -97,10 +109,13 @@ async function sendEmail(to: string, code: string): Promise<void> {
       html: `<div style="font-family:sans-serif;max-width:420px;margin:auto;background:#09090b;color:#fff;border-radius:16px;overflow:hidden"><div style="background:linear-gradient(135deg,#6366f1,#8b5cf6);padding:28px;text-align:center"><b style="font-size:28px">Zync</b></div><div style="padding:28px;text-align:center"><h2 style="margin:0 0 8px">Код подтверждения</h2><p style="color:#a1a1aa;margin:0 0 24px;font-size:14px">Действителен 10 минут</p><div style="background:#18181b;border:1px solid #3f3f46;border-radius:12px;padding:18px;margin-bottom:20px"><span style="font-size:38px;font-weight:900;letter-spacing:10px;color:#6366f1">${code}</span></div><p style="color:#52525b;font-size:12px">Если вы не запрашивали код — проигнорируйте это письмо.</p></div></div>`,
       text: `Ваш код входа в Zync: ${code}. Действителен 10 минут.`,
     });
-    console.log(`✓ 2FA code sent to ${to}`);
+    console.log(`✓ Email sent to ${to}`);
+  })();
+
+  try {
+    await Promise.race([send, timeout]);
   } catch (err) {
-    console.error('Email error:', err);
-    console.log(`[FALLBACK] 2FA code for ${to}: ${code}`);
+    console.error('Email send failed (non-fatal):', err);
   }
 }
 
