@@ -37,7 +37,7 @@ router.get('/search', async (req: AuthRequest, res) => {
 router.get('/by-username/:username', async (req: AuthRequest, res) => {
   try {
     const user = await prisma.user.findUnique({
-      where: { username: req.params.username.toLowerCase().replace('@', '') },
+      where: { username: String(req.params.username).toLowerCase().replace('@', '') },
       select: USER_SELECT,
     });
     if (!user) { res.status(404).json({ error: 'Пользователь не найден' }); return; }
