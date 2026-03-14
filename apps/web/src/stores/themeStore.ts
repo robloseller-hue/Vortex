@@ -70,7 +70,7 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
   syncToServer: async () => {
     set({ syncing: true });
     try {
-      await api.updateSettings({ themeSettings: get().settings });
+      await api.updateSettings({ themeSettings: get().settings as unknown as Record<string, unknown> });
     } catch { /* silent */ }
     set({ syncing: false });
   },

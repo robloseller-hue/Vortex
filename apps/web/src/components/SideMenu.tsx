@@ -34,7 +34,7 @@ import { useChatStore } from '../stores/chatStore';
 import { api } from '../lib/api';
 import { getSocket } from '../lib/socket';
 import { useLang } from '../lib/i18n';
-import { useThemeStore, ChatTheme } from '../stores/themeStore';
+import { useThemeStore, type ChatTheme, type FontSize, type BubbleSize, type ColorScheme } from '../stores/themeStore';
 import DatePicker from './DatePicker';
 import type { User as UserType, UserPresence, FriendRequest, FriendWithId } from '../lib/types';
 import SecuritySettings from './SecuritySettings';
