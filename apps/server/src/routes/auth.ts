@@ -343,9 +343,9 @@ router.get('/sessions', authenticateToken, async (req: AuthRequest, res) => {
         where: { token: currentToken },
         data: { lastActiveAt: new Date(), isCurrent: true },
       });
-      // Mark others as not current
+      const notToken: string = currentToken;
       await prisma.session.updateMany({
-        where: { userId: req.userId!, token: { not: (currentToken as string) || '' }
+        where: { userId: req.userId!, token: { not: notToken } },
         data: { isCurrent: false },
       });
     }
@@ -385,7 +385,9 @@ router.delete('/sessions/:id', authenticateToken, async (req: AuthRequest, res) 
 router.delete('/sessions', authenticateToken, async (req: AuthRequest, res) => {
   try {
     const currentToken = String(req.headers.authorization || '').split(' ')[1];
-    await prisma.session.deleteMany({ where: { userId: req.userId!, token: { not: (currentToken as string) } },
+    const delToken: string = currentToken || '';
+    await prisma.session.deleteMany({ where: { userId: req.userId!, token: { not: delToken } } });
+    res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Ошибка сервера' });
   }
