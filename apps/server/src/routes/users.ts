@@ -210,13 +210,22 @@ router.get('/messages/search', async (req: AuthRequest, res) => {
   }
 });
 
-// Обновить настройки приватности
+// Обновить настройки
 router.put('/settings', async (req: AuthRequest, res) => {
   try {
-    const { hideStoryViews } = req.body;
+    const { hideStoryViews, themeSettings } = req.body;
 
-    const updateData: Record<string, boolean> = {};
+    const updateData: Record<string, unknown> = {};
     if (typeof hideStoryViews === 'boolean') updateData.hideStoryViews = hideStoryViews;
+    if (themeSettings && typeof themeSettings === 'object') {
+      // Validate theme settings fields
+      const allowed = ['theme', 'accentColor', 'fontSize', 'bubbleSize', 'colorScheme', 'chatBg'];
+      const safe: Record<string, unknown> = {};
+      for (const key of allowed) {
+        if (key in themeSettings) safe[key] = (themeSettings as Record<string, unknown>)[key];
+      }
+      updateData.themeSettings = safe;
+    }
 
     const user = await prisma.user.update({
       where: { id: req.userId },

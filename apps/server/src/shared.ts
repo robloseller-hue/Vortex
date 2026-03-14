@@ -20,6 +20,7 @@ export const USER_SELECT = {
   createdAt: true,
   hideStoryViews: true,
   isVerified: true,
+  themeSettings: true,
 } as const;
 
 /** Compact user fields for message sender / forwarded-from */
@@ -29,6 +30,7 @@ export const SENDER_SELECT = {
   displayName: true,
   avatar: true,
   isVerified: true,
+  themeSettings: true,
 } as const;
 
 /** Full message include for API responses */

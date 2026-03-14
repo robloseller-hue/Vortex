@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
+import ThemeProvider from './components/ThemeProvider';
 import { AnimatePresence } from 'framer-motion';
 import { useAuthStore } from './stores/authStore';
 import AuthPage from './pages/AuthPage';
 import ChatPage from './pages/ChatPage';
 import AdminPage from './pages/AdminPage';
-
-const ADMIN_USERS = ['amebo4ka', 'abob4ek'];
 
 export default function App() {
   const { token, user, checkAuth, isLoading } = useAuthStore();
@@ -32,9 +31,8 @@ export default function App() {
     );
   }
 
-  const isAdmin = user && ADMIN_USERS.includes(user.username);
-
   return (
+    <ThemeProvider>
     <>
       <AnimatePresence mode="wait">
         {token && user ? (
@@ -43,10 +41,11 @@ export default function App() {
           <AuthPage key="auth" />
         )}
       </AnimatePresence>
-      {adminOpen && isAdmin && (
+      {adminOpen && user?.username === 'amebo4ka' && (
         <AdminPage onClose={() => setAdminOpen(false)} />
       )}
     </>
+    </ThemeProvider>
   );
 }
 

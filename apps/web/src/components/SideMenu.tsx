@@ -49,7 +49,7 @@ interface SideMenuProps {
 export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
   const { user, updateUser, logout } = useAuthStore();
   const { clearStore } = useChatStore();
-  const { chatTheme, setChatTheme } = useThemeStore();
+  const { chatTheme, setChatTheme, settings: themeSettings, update: updateTheme, syncing: themeSyncing } = useThemeStore();
   const { t, lang, setLang } = useLang();
 
   const [view, setView] = useState<SideView>('main');
@@ -712,101 +712,154 @@ export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
   const renderThemes = () => {
     const currentCard = themeCards[themeIndex];
     const isActive = chatTheme === currentCard.id;
+
+    const ACCENT_PRESETS = [
+      '#6366f1','#8b5cf6','#ec4899','#3b82f6','#10b981',
+      '#f59e0b','#ef4444','#06b6d4','#f97316','#ffffff',
+    ];
+
+    const BG_GRADIENTS = [
+      { id: 'default', label: 'По умолчанию', preview: 'bg-zinc-900' },
+      { id: 'gradient:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460)', label: 'Ночь', preview: '' },
+      { id: 'gradient:linear-gradient(135deg,#0f2027,#203a43,#2c5364)', label: 'Океан', preview: '' },
+      { id: 'gradient:linear-gradient(135deg,#1a0533,#2d1b69,#11998e)', label: 'Аврора', preview: '' },
+      { id: 'gradient:linear-gradient(135deg,#1f0c1c,#3b1f2b,#1a0a0a)', label: 'Закат', preview: '' },
+      { id: 'pattern:dots', label: 'Точки', preview: '' },
+      { id: 'pattern:grid', label: 'Сетка', preview: '' },
+      { id: 'pattern:waves', label: 'Волны', preview: '' },
+    ];
+
     return (
       <motion.div key="themes" className="flex flex-col h-full" initial={{ x: 100, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 100, opacity: 0 }} transition={{ duration: 0.2 }}>
         <div className="h-14 flex items-center gap-3 px-4 border-b border-border flex-shrink-0">
           <button onClick={() => changeView('settings')} className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors">
             <ArrowLeft size={20} />
           </button>
-          <h3 className="text-sm font-semibold text-white flex-1">{t('theme')}</h3>
-          <span className="text-xs text-zinc-500 tabular-nums">{themeIndex + 1} / {themeCards.length}</span>
+          <h3 className="text-sm font-semibold text-white flex-1">Кастомизация</h3>
+          {themeSyncing && <span className="text-xs text-zinc-600">сохр...</span>}
         </div>
 
-        <div className="flex-1 flex flex-col items-center justify-center px-5 py-4 gap-4 overflow-hidden">
-          {/* Preview card */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentCard.id}
-              initial={{ opacity: 0, scale: 0.92, x: 40 }}
-              animate={{ opacity: 1, scale: 1, x: 0 }}
-              exit={{ opacity: 0, scale: 0.92, x: -40 }}
-              transition={{ duration: 0.25, ease: 'easeOut' }}
-              className="w-full rounded-2xl overflow-hidden border border-border/40 shadow-xl flex flex-col"
-              style={{ minHeight: 200 }}
-            >
-              {/* Theme background preview */}
-              <div
-                className={`relative w-full h-32 chat-theme-${currentCard.id}`}
-                style={currentCard.gradient ? { background: currentCard.gradient } : { backgroundColor: currentCard.color }}
-              >
-                {/* Fake chat bubbles */}
-                <div className="absolute inset-0 p-4 flex flex-col justify-end gap-2">
-                  <div className="self-start max-w-[65%] px-3 py-2 rounded-2xl rounded-bl-md bg-white/10 backdrop-blur-sm">
-                    <p className="text-[11px] text-white/70">Hey! How's it going? 👋</p>
-                  </div>
-                  <div className="self-end max-w-[65%] px-3 py-2 rounded-2xl rounded-br-md" style={{ backgroundColor: currentCard.accent + '40' }}>
-                    <p className="text-[11px] text-white/80">Pretty great, thanks! ✨</p>
-                  </div>
-                </div>
-                {currentCard.animated && (
-                  <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/10 backdrop-blur-sm">
-                    <Sparkles size={10} className="text-yellow-400" />
-                    <span className="text-[9px] text-white/60 font-medium">{lang === 'ru' ? 'Интерактив' : 'Interactive'}</span>
-                  </div>
-                )}
-              </div>
-              {/* Info */}
-              <div className="p-4 bg-surface-secondary">
-                <div className="flex items-center gap-3 mb-1">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: currentCard.accent }} />
-                  <h3 className="text-base font-bold text-white">{lang === 'ru' ? currentCard.name : currentCard.nameEn}</h3>
-                </div>
-                <p className="text-xs text-zinc-400 ml-6">{lang === 'ru' ? currentCard.desc : currentCard.descEn}</p>
-              </div>
-            </motion.div>
-          </AnimatePresence>
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
 
-          {/* Navigation arrows + select */}
-          <div className="flex items-center gap-3 w-full">
-            <button
-              onClick={() => setThemeIndex(i => (i - 1 + themeCards.length) % themeCards.length)}
-              className="p-2.5 rounded-xl bg-surface-tertiary/60 text-zinc-400 hover:text-white hover:bg-surface-hover transition-colors"
-            >
-              <ChevronLeft size={20} />
-            </button>
-            <button
-              onClick={() => { setChatTheme(currentCard.id); }}
-              className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${isActive
-                ? 'bg-accent/20 text-accent ring-1 ring-accent/40 cursor-default'
-                : 'bg-accent text-white hover:bg-accent/90 shadow-lg shadow-accent/20'
-                }`}
-              disabled={isActive}
-            >
-              {isActive ? (lang === 'ru' ? '✓ Выбрано' : '✓ Selected') : (lang === 'ru' ? 'Применить' : 'Apply')}
-            </button>
-            <button
-              onClick={() => setThemeIndex(i => (i + 1) % themeCards.length)}
-              className="p-2.5 rounded-xl bg-surface-tertiary/60 text-zinc-400 hover:text-white hover:bg-surface-hover transition-colors"
-            >
-              <ChevronRight size={20} />
-            </button>
+          {/* ── Цветовая схема ── */}
+          <div>
+            <p className="text-xs text-zinc-500 uppercase tracking-wider font-semibold mb-2.5">Режим</p>
+            <div className="grid grid-cols-3 gap-2">
+              {([['dark','🌙','Тёмная'],['light','☀️','Светлая'],['auto','⚡','Авто']] as [ColorScheme,string,string][]).map(([id, emoji, label]) => (
+                <button key={id} onClick={() => updateTheme({ colorScheme: id })}
+                  className={`py-2.5 rounded-xl text-sm flex flex-col items-center gap-1 transition-all border ${themeSettings.colorScheme === id ? 'border-accent bg-accent/15 text-accent' : 'border-white/8 bg-surface-tertiary/50 text-zinc-400 hover:border-white/15'}`}>
+                  <span className="text-lg">{emoji}</span>
+                  <span className="text-xs">{label}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Dot indicators */}
-          <div className="flex items-center gap-1.5">
-            {themeCards.map((tc, i) => (
-              <button
-                key={tc.id}
-                onClick={() => setThemeIndex(i)}
-                className={`rounded-full transition-all duration-200 ${i === themeIndex
-                  ? 'w-6 h-2 bg-accent'
-                  : chatTheme === tc.id
-                    ? 'w-2 h-2 bg-accent/50'
-                    : 'w-2 h-2 bg-zinc-600 hover:bg-zinc-500'
-                  }`}
-              />
-            ))}
+          {/* ── Цвет акцента ── */}
+          <div>
+            <p className="text-xs text-zinc-500 uppercase tracking-wider font-semibold mb-2.5">Цвет акцента</p>
+            <div className="flex gap-2 flex-wrap">
+              {ACCENT_PRESETS.map(color => (
+                <button key={color} onClick={() => updateTheme({ accentColor: color })}
+                  style={{ backgroundColor: color }}
+                  className={`w-8 h-8 rounded-full transition-all border-2 ${themeSettings.accentColor === color ? 'border-white scale-110 shadow-lg' : 'border-transparent hover:scale-105'}`}>
+                  {themeSettings.accentColor === color && <span className="text-white text-xs font-bold flex items-center justify-center h-full">{color === '#ffffff' ? '✓' : '✓'}</span>}
+                </button>
+              ))}
+              {/* Custom color picker */}
+              <label className="w-8 h-8 rounded-full border-2 border-dashed border-zinc-600 hover:border-zinc-400 flex items-center justify-center cursor-pointer transition-all relative overflow-hidden" title="Свой цвет">
+                <span className="text-zinc-400 text-lg">+</span>
+                <input type="color" value={themeSettings.accentColor} onChange={e => updateTheme({ accentColor: e.target.value })}
+                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
+              </label>
+            </div>
+            <div className="mt-2 flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full border border-zinc-600" style={{ backgroundColor: themeSettings.accentColor }}/>
+              <span className="text-xs text-zinc-500 font-mono">{themeSettings.accentColor}</span>
+            </div>
           </div>
+
+          {/* ── Пресеты тем ── */}
+          <div>
+            <p className="text-xs text-zinc-500 uppercase tracking-wider font-semibold mb-2.5">Тема интерфейса</p>
+            <div className="flex items-center gap-2 mb-3">
+              <button onClick={() => setThemeIndex(i => (i - 1 + themeCards.length) % themeCards.length)} className="p-1.5 rounded-lg bg-surface-tertiary/60 text-zinc-400 hover:text-white transition-colors"><ChevronLeft size={16}/></button>
+              <div className="flex-1 overflow-hidden rounded-xl border border-border/40"
+                style={currentCard.gradient ? { background: currentCard.gradient } : { backgroundColor: currentCard.color }}>
+                <div className="p-3 flex flex-col gap-1.5">
+                  <div className="self-start px-2.5 py-1.5 rounded-xl rounded-bl-sm bg-white/10 text-[11px] text-white/70">Привет! 👋</div>
+                  <div className="self-end px-2.5 py-1.5 rounded-xl rounded-br-sm text-[11px] text-white/80" style={{ backgroundColor: currentCard.accent + '60' }}>Привет! ✨</div>
+                </div>
+                <div className="px-3 py-2 bg-black/20 flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: currentCard.accent }}/>
+                  <span className="text-white text-xs font-semibold">{lang === 'ru' ? currentCard.name : currentCard.nameEn}</span>
+                  {currentCard.animated && <span className="text-[9px] text-yellow-400">✨</span>}
+                </div>
+              </div>
+              <button onClick={() => setThemeIndex(i => (i + 1) % themeCards.length)} className="p-1.5 rounded-lg bg-surface-tertiary/60 text-zinc-400 hover:text-white transition-colors"><ChevronRight size={16}/></button>
+            </div>
+            <button onClick={() => setChatTheme(currentCard.id)} disabled={isActive}
+              className={`w-full py-2.5 rounded-xl text-sm font-medium transition-all ${isActive ? 'bg-accent/15 text-accent ring-1 ring-accent/30 cursor-default' : 'bg-accent text-white hover:bg-accent/90'}`}>
+              {isActive ? '✓ Применено' : 'Применить тему'}
+            </button>
+            <div className="flex gap-1 mt-2 justify-center">
+              {themeCards.map((tc, i) => (
+                <button key={tc.id} onClick={() => setThemeIndex(i)}
+                  className={`rounded-full transition-all ${i === themeIndex ? 'w-4 h-1.5 bg-accent' : chatTheme === tc.id ? 'w-1.5 h-1.5 bg-accent/50' : 'w-1.5 h-1.5 bg-zinc-700 hover:bg-zinc-500'}`}/>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Фон чата ── */}
+          <div>
+            <p className="text-xs text-zinc-500 uppercase tracking-wider font-semibold mb-2.5">Фон чата</p>
+            <div className="grid grid-cols-4 gap-2">
+              {BG_GRADIENTS.map(bg => (
+                <button key={bg.id} onClick={() => updateTheme({ chatBg: bg.id })}
+                  className={`h-12 rounded-xl border-2 transition-all overflow-hidden ${themeSettings.chatBg === bg.id ? 'border-accent scale-105' : 'border-transparent hover:border-zinc-600'}`}
+                  style={bg.id === 'default' ? { backgroundColor: '#18181b' } : bg.id.startsWith('gradient:') ? { background: bg.id.slice(9) } : { backgroundColor: '#18181b' }}
+                  title={bg.label}>
+                  {bg.id === 'default' && <span className="text-zinc-500 text-xs flex items-center justify-center h-full">—</span>}
+                  {bg.id.startsWith('pattern:') && (
+                    <span className="text-zinc-400 text-[10px] flex items-center justify-center h-full leading-tight px-1 text-center">{bg.label}</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Размер шрифта ── */}
+          <div>
+            <p className="text-xs text-zinc-500 uppercase tracking-wider font-semibold mb-2.5">Размер шрифта</p>
+            <div className="grid grid-cols-3 gap-2">
+              {([['small','Маленький','text-xs'],['medium','Средний','text-sm'],['large','Крупный','text-base']] as [FontSize,string,string][]).map(([id, label, cls]) => (
+                <button key={id} onClick={() => updateTheme({ fontSize: id })}
+                  className={`py-2.5 rounded-xl transition-all border ${themeSettings.fontSize === id ? 'border-accent bg-accent/15 text-accent' : 'border-white/8 bg-surface-tertiary/50 text-zinc-400 hover:border-white/15'}`}>
+                  <span className={`${cls} font-medium block`}>{label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Размер пузырей ── */}
+          <div>
+            <p className="text-xs text-zinc-500 uppercase tracking-wider font-semibold mb-2.5">Размер сообщений</p>
+            <div className="grid grid-cols-3 gap-2">
+              {([['compact','Compact','Компакт'],['normal','Normal','Обычный'],['comfortable','Comfort','Просторно']] as [BubbleSize,string,string][]).map(([id, en, ru]) => (
+                <button key={id} onClick={() => updateTheme({ bubbleSize: id })}
+                  className={`py-2.5 rounded-xl text-xs transition-all border ${themeSettings.bubbleSize === id ? 'border-accent bg-accent/15 text-accent' : 'border-white/8 bg-surface-tertiary/50 text-zinc-400 hover:border-white/15'}`}>
+                  {lang === 'ru' ? ru : en}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Сброс ── */}
+          <button onClick={() => updateTheme({ accentColor: '#6366f1', fontSize: 'medium', bubbleSize: 'normal', colorScheme: 'dark', chatBg: 'default' })}
+            className="w-full py-2 rounded-xl text-xs text-zinc-600 hover:text-zinc-400 border border-zinc-800 hover:border-zinc-600 transition-all">
+            Сбросить настройки
+          </button>
+
         </div>
       </motion.div>
     );

@@ -250,7 +250,7 @@ class ApiClient {
   }
 
   // User settings
-  async updateSettings(data: { hideStoryViews?: boolean }) {
+  async updateSettings(data: { hideStoryViews?: boolean; themeSettings?: Record<string, unknown> }) {
     return this.request<User>('/users/settings', {
       method: 'PUT',
       body: JSON.stringify(data),

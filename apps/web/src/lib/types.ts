@@ -11,6 +11,7 @@ export interface UserPresence extends UserBasic {
   isOnline: boolean;
   lastSeen: string;
   isVerified?: boolean;
+  themeSettings?: Record<string, unknown>;
 }
 
 export interface User extends UserPresence {
@@ -19,6 +20,7 @@ export interface User extends UserPresence {
   createdAt: string;
   hideStoryViews?: boolean;
   isVerified?: boolean;
+  themeSettings?: Record<string, unknown>;
 }
 
 // ─── Chat types ────────────────────────────────────────────────────────
@@ -59,6 +61,7 @@ export interface MessageSender {
   displayName: string;
   avatar?: string | null;
   isVerified?: boolean;
+  themeSettings?: Record<string, unknown>;
 }
 
 export interface Message {

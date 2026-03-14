@@ -22,13 +22,8 @@ model User {
   isOnline    Boolean  @default(false)
   hideStoryViews Boolean @default(false)
   registrationIp String?
-  isVerified  Boolean  @default(false)
-
-  // 2FA
-  twoFaEnabled  Boolean  @default(false)
-  twoFaEmail    String?
-  twoFaCode     String?
-  twoFaCodeExp  DateTime?
+  isVerified      Boolean  @default(false)
+  themeSettings   Json?
 
   messages    Message[]
   chatMembers ChatMember[]
@@ -39,24 +34,6 @@ model User {
   storyViews  StoryView[]
   friendshipsSent     Friendship[] @relation("FriendshipsSent")
   friendshipsReceived Friendship[] @relation("FriendshipsReceived")
-  sessions    Session[]
-}
-
-model Session {
-  id          String   @id @default(uuid())
-  userId      String
-  token       String   @unique
-  deviceName  String?
-  browser     String?
-  os          String?
-  ip          String?
-  country     String?
-  city        String?
-  isCurrent   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  lastActiveAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Chat {
@@ -209,7 +186,7 @@ model Friendship {
   id        String   @id @default(uuid())
   userId    String
   friendId  String
-  status    String   @default("pending")
+  status    String   @default("pending") // pending | accepted | declined
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
