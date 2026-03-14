@@ -79,14 +79,60 @@ async function createSession(userId: string, token: string, req: { ip?: string; 
   }
 }
 
-function sendEmail(to: string, code: string): void {
-  // In production use nodemailer/sendgrid. For now log to console.
-  console.log(`\n╔══════════════════════════════╗`);
-  console.log(`║  2FA КОД для ${to}`);
-  console.log(`║  Код: ${code}`);
-  console.log(`║  Действителен 10 минут`);
-  console.log(`╚══════════════════════════════╝\n`);
-  // TODO: replace with real email sending
+async function sendEmail(to: string, code: string): Promise<void> {
+  const smtpHost = process.env.SMTP_HOST;
+  const smtpPort = Number(process.env.SMTP_PORT || '587');
+  const smtpUser = process.env.SMTP_USER;
+  const smtpPass = process.env.SMTP_PASS;
+  const smtpFrom = process.env.SMTP_FROM || smtpUser || 'noreply@zync.app';
+
+  if (!smtpHost || !smtpUser || !smtpPass) {
+    // Fallback: log to console if SMTP not configured
+    console.log(`\n╔══════════════════════════════╗`);
+    console.log(`║  2FA КОД для ${to}`);
+    console.log(`║  Код: ${code}`);
+    console.log(`║  Действителен 10 минут`);
+    console.log(`╚══════════════════════════════╝\n`);
+    return;
+  }
+
+  try {
+    const nodemailer = await import('nodemailer');
+    const transporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpPort === 465,
+      auth: { user: smtpUser, pass: smtpPass },
+    });
+
+    await transporter.sendMail({
+      from: `"Zync Messenger" <${smtpFrom}>`,
+      to,
+      subject: `Ваш код входа в Zync: ${code}`,
+      html: `
+        <div style="font-family:Inter,Arial,sans-serif;max-width:480px;margin:0 auto;background:#09090b;color:#fff;border-radius:16px;overflow:hidden">
+          <div style="background:linear-gradient(135deg,#6366f1,#8b5cf6);padding:32px;text-align:center">
+            <div style="font-size:32px;font-weight:900;letter-spacing:-1px">Zync</div>
+            <div style="font-size:14px;opacity:0.8;margin-top:4px">Messenger</div>
+          </div>
+          <div style="padding:32px;text-align:center">
+            <h2 style="font-size:18px;font-weight:600;margin:0 0 8px">Код подтверждения входа</h2>
+            <p style="color:#a1a1aa;font-size:14px;margin:0 0 28px">Используйте этот код для входа в аккаунт. Он действует 10 минут.</p>
+            <div style="background:#18181b;border:1px solid #3f3f46;border-radius:12px;padding:20px;margin-bottom:24px">
+              <span style="font-size:40px;font-weight:900;letter-spacing:12px;color:#6366f1">${code}</span>
+            </div>
+            <p style="color:#52525b;font-size:12px;margin:0">Если вы не запрашивали этот код — проигнорируйте письмо.</p>
+          </div>
+        </div>
+      `,
+      text: `Ваш код входа в Zync: ${code}\n\nДействителен 10 минут. Если вы не запрашивали код — проигнорируйте это письмо.`,
+    });
+    console.log(`✓ 2FA код отправлен на ${to}`);
+  } catch (err) {
+    console.error('Email send error:', err);
+    // Still log the code as fallback so admin can help users
+    console.log(`[FALLBACK] 2FA code for ${to}: ${code}`);
+  }
 }
 
 // ── Register ─────────────────────────────────────────────────────────
@@ -161,7 +207,7 @@ router.post('/login', async (req, res) => {
         data: { twoFaCode: code, twoFaCodeExp: exp },
       });
 
-      sendEmail(user.twoFaEmail, code);
+      await sendEmail(user.twoFaEmail, code);
 
       res.json({
         twoFaRequired: true,
@@ -233,7 +279,7 @@ router.post('/2fa/setup', authenticateToken, twoFaLimiter, async (req: AuthReque
       data: { twoFaEmail: email, twoFaCode: code, twoFaCodeExp: exp },
     });
 
-    sendEmail(email, code);
+    await sendEmail(email, code);
     res.json({ success: true, emailHint: email.replace(/(.{2})(.*)(@.*)/, '$1***$3') });
   } catch (error) {
     console.error('2FA setup error:', error);
@@ -289,7 +335,7 @@ router.post('/2fa/disable', authenticateToken, async (req: AuthRequest, res) => 
 // ── Get sessions ───────────────────────────────────────────────────────
 router.get('/sessions', authenticateToken, async (req: AuthRequest, res) => {
   try {
-    const currentToken = req.headers.authorization?.split(' ')[1];
+    const currentToken = String(req.headers.authorization || '').split(' ')[1];
 
     // Update current session last active
     if (currentToken) {
@@ -338,7 +384,7 @@ router.delete('/sessions/:id', authenticateToken, async (req: AuthRequest, res) 
 // ── Revoke ALL other sessions ───────────────────────────────────────────
 router.delete('/sessions', authenticateToken, async (req: AuthRequest, res) => {
   try {
-    const currentToken = req.headers.authorization?.split(' ')[1];
+    const currentToken = String(req.headers.authorization || '').split(' ')[1];
     await prisma.session.deleteMany({ where: { userId: req.userId!, token: { not: currentToken || '' } } });
     res.json({ success: true });
   } catch (error) {
