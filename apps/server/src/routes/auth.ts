@@ -335,7 +335,7 @@ router.post('/2fa/disable', authenticateToken, async (req: AuthRequest, res) => 
 // ── Get sessions ───────────────────────────────────────────────────────
 router.get('/sessions', authenticateToken, async (req: AuthRequest, res) => {
   try {
-    const currentToken = String(req.headers.authorization || '').split(' ')[1];
+    const currentToken = (req.headers.authorization as string || '').split(' ')[1] as string;
 
     // Update current session last active
     if (currentToken) {
@@ -384,7 +384,7 @@ router.delete('/sessions/:id', authenticateToken, async (req: AuthRequest, res) 
 // ── Revoke ALL other sessions ───────────────────────────────────────────
 router.delete('/sessions', authenticateToken, async (req: AuthRequest, res) => {
   try {
-    const currentToken = String(req.headers.authorization || '').split(' ')[1];
+    const currentToken = (req.headers.authorization as string || '').split(' ')[1] as string;
     const delToken: string = currentToken || '';
     await prisma.session.deleteMany({ where: { userId: req.userId!, token: { not: delToken } } });
     res.json({ success: true });
