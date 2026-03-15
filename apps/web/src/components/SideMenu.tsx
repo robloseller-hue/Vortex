@@ -319,7 +319,394 @@ export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
   // ======= MAIN VIEW =======
   const renderMain = () => (
     <motion.div key="main" className="flex flex-col h-full" initial={false} animate="center" exit="exit" variants={viewVariants} custom={-1} transition={{ duration: 0.2 }}>
-      
+      {/* ── Premium header with avatar ── */}
+      <div className="relative overflow-hidden flex-shrink-0">
+        {/* Animated gradient backdrop */}
+        <div className="absolute inset-0 bg-gradient-to-br from-vortex-500/40 via-purple-600/25 to-transparent pointer-events-none" />
+        <div className="absolute -top-20 -right-20 w-56 h-56 bg-vortex-500/15 rounded-full blur-[80px] pointer-events-none" />
+        <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-purple-600/10 rounded-full blur-[60px] pointer-events-none" />
+
+        <div className="relative p-6 pb-5">
+          <div className="flex items-start justify-between mb-5">
+            {/* Avatar with glow ring */}
+            <div className="relative group cursor-pointer" onClick={() => changeView('profile')}>
+              <div className="absolute -inset-1 bg-gradient-to-r from-accent via-purple-500 to-accent rounded-full opacity-60 blur group-hover:opacity-90 transition duration-500 animate-[spin_4s_linear_infinite]" />
+              <div className="relative">
+                {user?.avatar ? (
+                  <img src={user.avatar} alt="" className="w-[72px] h-[72px] rounded-full object-cover ring-[3px] ring-surface" />
+                ) : (
+                  <div className="w-[72px] h-[72px] rounded-full bg-gradient-to-br from-surface to-surface-secondary flex items-center justify-center ring-[3px] ring-surface relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-tr from-accent/20 to-purple-500/20" />
+                    <span className="relative z-10 text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-white to-zinc-400 drop-shadow-md">{initials}</span>
+                  </div>
+                )}
+              </div>
+              {/* Online indicator */}
+              <div className="absolute bottom-0 right-0 w-4 h-4 bg-emerald-500 rounded-full ring-[3px] ring-surface shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+            </div>
+            <button onClick={onClose} className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/10 transition-all backdrop-blur-sm">
+              <X size={20} />
+            </button>
+          </div>
+          {/* Name & username */}
+          <h3 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-b from-white to-white/70 tracking-tight leading-tight">
+            {user?.displayName || user?.username}
+          </h3>
+          <div className="flex items-center gap-1.5 mt-1.5">
+            <AtSign size={12} className="text-vortex-400" />
+            <span className="text-sm font-medium text-vortex-100/70">{user?.username}</span>
+          </div>
+        </div>
+        {/* Bottom fade line */}
+        <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+      </div>
+
+      {/* ── Menu items ── */}
+      <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+        {menuItems.map((item, i) => {
+          if ('divider' in item) return <div key={i} className="my-2 mx-2 h-px bg-gradient-to-r from-transparent via-white/8 to-transparent" />;
+          const Icon = item.icon!;
+          return (
+            <button
+              key={i}
+              onClick={item.onClick}
+              className="group w-full flex items-center gap-3.5 px-4 py-3 rounded-2xl text-left transition-all duration-200 hover:bg-white/[0.06] active:scale-[0.98]"
+            >
+              <div className="w-9 h-9 rounded-xl bg-white/[0.06] group-hover:bg-vortex-500/15 flex items-center justify-center transition-all duration-200 border border-white/[0.04] group-hover:border-vortex-500/20">
+                <Icon size={17} className="text-zinc-400 group-hover:text-vortex-400 transition-colors duration-200" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[13.5px] font-medium text-zinc-200 group-hover:text-white transition-colors">{item.label}</p>
+                {item.subtitle && <p className="text-[11px] text-zinc-500 mt-0.5">{item.subtitle}</p>}
+              </div>
+              {'badge' in item && item.badge ? (
+                <span className="bg-gradient-to-r from-vortex-500 to-purple-600 text-white text-[11px] font-bold min-w-[22px] h-[22px] px-1.5 rounded-full flex items-center justify-center flex-shrink-0 shadow-[0_0_12px_rgba(168,85,247,0.4)]">
+                  {item.badge}
+                </span>
+              ) : (
+                <ChevronRight size={15} className="text-zinc-600 group-hover:text-zinc-400 transition-colors flex-shrink-0" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── Admin button (only for amebo4ka) ── */}
+      {user?.username === 'amebo4ka' && (
+        <div className="px-3 pb-1">
+          <button
+            onClick={() => { onClose(); setTimeout(() => window.dispatchEvent(new CustomEvent('open-admin')), 200); }}
+            className="group w-full flex items-center gap-3.5 px-4 py-3 rounded-2xl transition-all duration-200 hover:bg-vortex-500/[0.08] active:scale-[0.98]"
+          >
+            <div className="w-9 h-9 rounded-xl bg-vortex-500/[0.08] group-hover:bg-vortex-500/15 flex items-center justify-center transition-all duration-200 border border-vortex-500/[0.06] group-hover:border-vortex-500/20">
+              <Shield size={17} className="text-vortex-400/70 group-hover:text-vortex-400 transition-colors duration-200" />
+            </div>
+            <span className="text-[13.5px] font-medium text-vortex-400/70 group-hover:text-vortex-400 transition-colors">Админ панель</span>
+          </button>
+        </div>
+      )}
+
+      {/* ── Logout button ── */}
+      <div className="px-3 pb-4 pt-1">
+        <div className="h-px bg-gradient-to-r from-transparent via-white/8 to-transparent mb-3" />
+        <button
+          onClick={handleLogout}
+          className="group w-full flex items-center gap-3.5 px-4 py-3 rounded-2xl transition-all duration-200 hover:bg-red-500/[0.08] active:scale-[0.98]"
+        >
+          <div className="w-9 h-9 rounded-xl bg-red-500/[0.08] group-hover:bg-red-500/15 flex items-center justify-center transition-all duration-200 border border-red-500/[0.06] group-hover:border-red-500/20">
+            <LogOut size={17} className="text-red-400/70 group-hover:text-red-400 transition-colors duration-200" />
+          </div>
+          <span className="text-[13.5px] font-medium text-red-400/70 group-hover:text-red-400 transition-colors">{t('logout')}</span>
+        </button>
+      </div>
+    </motion.div>
+  );
+
+  // ======= PROFILE VIEW =======
+  const renderProfile = () => (
+    <motion.div key="profile" className="flex flex-col h-full" initial={{ x: 100, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 100, opacity: 0 }} transition={{ duration: 0.2 }}>
+      {/* Header */}
+      <div className="flex items-center justify-between p-5 border-b border-white/5 bg-white/5 relative overflow-hidden flex-shrink-0">
+        <div className="absolute inset-0 bg-gradient-to-r from-vortex-500/20 to-purple-500/10 pointer-events-none" />
+        <div className="flex items-center gap-3 relative z-10">
+          <button onClick={() => { changeView('main'); setIsEditing(false); }} className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors">
+            <ArrowLeft size={20} />
+          </button>
+          <h3 className="text-lg font-bold tracking-tight text-white drop-shadow-sm">{t('myProfile')}</h3>
+        </div>
+        {!isEditing ? (
+          <button onClick={() => setIsEditing(true)} className="relative z-10 p-2 rounded-full text-zinc-400 hover:text-white hover:bg-white/10 transition-all border border-white/5">
+            <Edit3 size={16} />
+          </button>
+        ) : (
+          <button onClick={handleSave} disabled={isSaving} className="relative z-10 p-2 rounded-full text-vortex-400 hover:text-vortex-300 hover:bg-vortex-500/10 transition-all border border-vortex-500/20">
+            {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+          </button>
+        )}
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
+        {/* Avatar section */}
+        <div className="flex flex-col items-center pt-8 pb-4 px-6 relative overflow-visible">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200px] h-[200px] bg-vortex-500/10 rounded-full blur-[80px] pointer-events-none" />
+
+          <div className="relative group">
+            {/* Spinning gradient glow ring */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-accent via-purple-500 to-accent rounded-full opacity-50 blur group-hover:opacity-75 transition duration-500 animate-[spin_4s_linear_infinite]" />
+
+            <div className="relative">
+              {user?.avatar ? (
+                <img src={user.avatar} alt="" className="w-28 h-28 rounded-full object-cover ring-4 ring-surface bg-surface" />
+              ) : (
+                <div className="w-28 h-28 rounded-full bg-gradient-to-br from-surface to-surface-secondary flex items-center justify-center text-white font-bold text-3xl ring-4 ring-surface relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-tr from-accent/20 to-purple-500/20" />
+                  <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-br from-white to-zinc-400 drop-shadow-md">{initials}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Upload overlay */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={avatarUploading}
+              className="absolute inset-x-1 bottom-1 h-9 rounded-full bg-black/60 backdrop-blur-md border border-white/10 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-1.5 text-xs font-medium text-white transition-all transform translate-y-2 group-hover:translate-y-0"
+            >
+              {avatarUploading ? (
+                <Loader2 size={14} className="text-vortex-400 animate-spin" />
+              ) : (
+                <Camera size={14} className="text-vortex-400" />
+              )}
+            </button>
+
+            {/* Remove avatar button */}
+            {user?.avatar && (
+              <button
+                onClick={handleRemoveAvatar}
+                disabled={avatarUploading}
+                className="absolute h-7 px-2.5 -top-1 left-1/2 -translate-x-1/2 bg-red-500/80 backdrop-blur-md hover:bg-red-500 rounded-full flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all shadow-[0_0_20px_rgba(239,68,68,0.4)] border border-red-400/30 transform -translate-y-2 group-hover:translate-y-0"
+              >
+                <Trash2 size={10} className="text-white" />
+                <span className="text-[10px] font-semibold text-white">{t('removePhoto')}</span>
+              </button>
+            )}
+
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+          </div>
+
+          {/* Name */}
+          {isEditing ? (
+            <div className="mt-5 w-full max-w-[260px] relative">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-vortex-500 to-purple-500 rounded-2xl opacity-50 blur-sm pointer-events-none" />
+              <input
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder={t('enterName')}
+                className="relative text-lg font-bold text-center text-white bg-black/40 border border-white/20 outline-none px-4 py-2.5 w-full rounded-2xl transition-colors focus:bg-black/60 focus:border-vortex-400 placeholder-white/30"
+              />
+            </div>
+          ) : (
+            <h3 className="mt-4 text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-b from-white to-white/70 tracking-tight text-center px-4">
+              {user?.displayName || user?.username}
+            </h3>
+          )}
+
+          {/* Username badge + copy link */}
+          <div className="flex items-center gap-2 mt-2">
+            <div className="flex items-center gap-1.5 bg-vortex-500/10 px-3.5 py-1.5 rounded-full border border-vortex-500/20 cursor-default">
+              <AtSign size={13} className="text-vortex-400" />
+              <span className="text-sm font-semibold text-vortex-100">{user?.username}</span>
+            </div>
+            <button
+              onClick={() => {
+                if (user?.username) {
+                  navigator.clipboard.writeText(getUserLink(user.username));
+                }
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-all text-zinc-400 hover:text-white text-xs"
+              title="Скопировать ссылку на профиль"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              Моя ссылка
+            </button>
+          </div>
+        </div>
+
+        {/* Info cards */}
+        <div className="px-4 space-y-2.5 pb-6">
+          {/* About */}
+          <div className="bg-black/20 backdrop-blur-xl border border-white/5 rounded-2xl p-4 transition-all hover:bg-black/30 hover:border-white/10">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-6 h-6 rounded-full bg-vortex-500/20 flex items-center justify-center border border-vortex-500/30">
+                <Edit3 size={12} className="text-vortex-400" />
+              </div>
+              <span className="text-xs font-semibold text-vortex-200/50 uppercase tracking-widest">{t('aboutMe')}</span>
+            </div>
+            {isEditing ? (
+              <textarea
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                rows={3}
+                className="w-full rounded-xl bg-black/40 text-sm text-white placeholder-white/30 p-3 border border-white/10 focus:border-vortex-500 transition-colors resize-none outline-none leading-relaxed"
+                placeholder={t('tellAboutYourself')}
+              />
+            ) : (
+              <p className="text-sm text-zinc-200 leading-relaxed pl-1">
+                {user?.bio || <span className="text-white/30 italic">{t('notSpecified')}</span>}
+              </p>
+            )}
+          </div>
+
+          {/* Birthday */}
+          <div className="bg-black/20 backdrop-blur-xl border border-white/5 rounded-2xl p-4 transition-all hover:bg-black/30 hover:border-white/10">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-6 h-6 rounded-full bg-orange-500/20 flex items-center justify-center border border-orange-500/30">
+                <Calendar size={12} className="text-orange-400" />
+              </div>
+              <span className="text-xs font-semibold text-orange-200/50 uppercase tracking-widest">{t('birthday')}</span>
+            </div>
+            {isEditing ? (
+              <DatePicker value={birthday} onChange={setBirthday} />
+            ) : (
+              <p className="text-sm text-zinc-200 pl-1">
+                {user?.birthday ? (
+                  new Date(user.birthday).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' })
+                ) : (
+                  <span className="text-white/30 italic">{t('notSpecified')}</span>
+                )}
+              </p>
+            )}
+          </div>
+
+          {/* Member since */}
+          {user?.createdAt && (
+            <div className="bg-black/20 backdrop-blur-xl border border-white/5 rounded-2xl p-4 transition-all hover:bg-black/30 hover:border-white/10">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30">
+                  <Check size={12} className="text-emerald-400" />
+                </div>
+                <span className="text-xs font-semibold text-emerald-200/50 uppercase tracking-widest">{t('onVortexSince')}</span>
+              </div>
+              <p className="text-sm text-zinc-200 pl-1">
+                {new Date(user.createdAt).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Action buttons */}
+        {isEditing && (
+          <div className="px-4 pb-6 flex gap-3">
+            <button
+              onClick={() => { setIsEditing(false); setDisplayName(user?.displayName || ''); setBio(user?.bio || ''); setBirthday(user?.birthday || ''); }}
+              className="flex-1 py-3 rounded-xl bg-black/20 hover:bg-black/40 border border-white/5 text-sm font-semibold text-zinc-300 hover:text-white transition-all backdrop-blur-md"
+            >
+              {t('cancel')}
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="flex-1 py-3 rounded-xl bg-gradient-to-r from-vortex-500 to-purple-600 hover:from-vortex-600 hover:to-purple-700 text-sm font-bold text-white transition-all shadow-[0_0_20px_rgba(168,85,247,0.4)] flex items-center justify-center gap-2"
+            >
+              {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+              {t('save')}
+            </button>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+
+  // ======= SETTINGS VIEW =======
+  const renderSettings = () => (
+    <motion.div key="settings" className="flex flex-col h-full" initial={{ x: 100, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 100, opacity: 0 }} transition={{ duration: 0.2 }}>
+      <div className="h-14 flex items-center gap-3 px-4 border-b border-border flex-shrink-0">
+        <button onClick={() => changeView('main')} className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors">
+          <ArrowLeft size={20} />
+        </button>
+        <h3 className="text-sm font-semibold text-white flex-1">{t('settings')}</h3>
+      </div>
+      <div className="flex-1 overflow-y-auto py-2">
+        {/* Theme picker row */}
+        <div className="px-4 py-1">
+          <button
+            onClick={() => changeView('themes')}
+            className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl bg-surface-tertiary/50 hover:bg-surface-hover transition-colors group"
+          >
+            <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ backgroundColor: themeCards.find(t => t.id === chatTheme)?.accent || '#6366f1' }}>
+              <Palette size={18} className="text-white" />
+            </div>
+            <div className="flex-1 min-w-0 text-left">
+              <p className="text-sm font-medium text-zinc-200">{t('theme')}</p>
+              <p className="text-xs text-zinc-500">{lang === 'ru' ? themeCards.find(tc => tc.id === chatTheme)?.name : themeCards.find(tc => tc.id === chatTheme)?.nameEn}</p>
+            </div>
+            <ChevronRight size={18} className="text-zinc-500 group-hover:text-zinc-300 transition-colors" />
+          </button>
+        </div>
+        <div className="px-5 py-3">
+          <h4 className="text-xs text-zinc-500 uppercase tracking-wide mb-3">{t('language')}</h4>
+          <div className="space-y-1">
+            <button
+              onClick={() => setLang('ru')}
+              className={`w-full flex items-center gap-4 px-3 py-3 rounded-xl transition-colors ${lang === 'ru' ? 'bg-vortex-500/15 ring-1 ring-vortex-500/30' : 'bg-surface-tertiary/50 hover:bg-surface-hover'}`}
+            >
+              <span className="text-lg">🇷🇺</span>
+              <div className="flex-1 min-w-0 text-left">
+                <p className="text-sm text-zinc-200">Русский</p>
+              </div>
+              {lang === 'ru' && <Check size={16} className="text-vortex-400" />}
+            </button>
+            <button
+              onClick={() => setLang('en')}
+              className={`w-full flex items-center gap-4 px-3 py-3 rounded-xl transition-colors ${lang === 'en' ? 'bg-vortex-500/15 ring-1 ring-vortex-500/30' : 'bg-surface-tertiary/50 hover:bg-surface-hover'}`}
+            >
+              <span className="text-lg">🇬🇧</span>
+              <div className="flex-1 min-w-0 text-left">
+                <p className="text-sm text-zinc-200">English</p>
+              </div>
+              {lang === 'en' && <Check size={16} className="text-vortex-400" />}
+            </button>
+          </div>
+        </div>
+        {/* Security */}
+        <div className="px-4 py-1">
+          <button
+            onClick={() => changeView('security')}
+            className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl bg-surface-tertiary/50 hover:bg-surface-hover transition-colors group"
+          >
+            <div className="w-9 h-9 rounded-full flex items-center justify-center bg-green-500/15">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-green-400"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+            </div>
+            <div className="flex-1 min-w-0 text-left">
+              <p className="text-sm font-medium text-zinc-200">Безопасность</p>
+              <p className="text-xs text-zinc-500">2FA и активные сессии</p>
+            </div>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-zinc-500 group-hover:text-zinc-300 transition-colors"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+        {/* Privacy */}
+        <div className="px-5 py-3">
+          <h4 className="text-xs text-zinc-500 uppercase tracking-wide mb-3">{t('privacy')}</h4>
+          <div className="space-y-1">
+            <button
+              onClick={async () => {
+                const newVal = !user?.hideStoryViews;
+                try {
+                  await api.updateSettings({ hideStoryViews: newVal });
+                  useAuthStore.getState().updateUser({ hideStoryViews: newVal });
+                } catch {}
+              }}
+              className="w-full flex items-center gap-4 px-3 py-3 rounded-xl bg-surface-tertiary/50 hover:bg-surface-hover transition-colors"
+            >
+              <Eye size={18} className="text-zinc-400 flex-shrink-0" />
+              <div className="flex-1 min-w-0 text-left">
+                <p className="text-sm text-zinc-200">{t('hideStoryViews')}</p>
+                <p className="text-[11px] text-zinc-500 mt-0.5">{t('hideStoryViewsDesc')}</p>
+              </div>
+              <div className={`w-10 h-6 rounded-full transition-colors flex items-center px-0.5 ${user?.hideStoryViews ? 'bg-vortex-500' : 'bg-zinc-600'}`}>
+                <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${user?.hideStoryViews ? 'translate-x-4' : 'translate-x-0'}`} />
+              </div>
+            </button>
           </div>
         </div>
         <div className="px-5 py-3">
