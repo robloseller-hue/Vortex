@@ -84,23 +84,38 @@ async function sendEmail(to: string, code: string): Promise<void> {
   const gmailPass = process.env.GMAIL_PASS;
   if (!gmailUser || !gmailPass) {
     console.warn('GMAIL_USER or GMAIL_PASS not set, skipping email');
+    console.log('[2FA FALLBACK] Code for ' + to + ': ' + code);
     return;
   }
   try {
     const nodemailer = await import('nodemailer');
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      requireTLS: true,
       auth: { user: gmailUser, pass: gmailPass },
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 15000,
     });
+    const html = '<div style="font-family:sans-serif;max-width:400px;margin:0 auto;padding:32px;background:#09090b;border-radius:16px;border:1px solid #27272a">'
+      + '<h2 style="color:#6366f1;margin:0 0 8px">Zync Messenger</h2>'
+      + '<p style="color:#a1a1aa;margin:0 0 24px">Ваш код для входа:</p>'
+      + '<div style="background:#18181b;border:2px solid #6366f1;border-radius:12px;padding:20px;text-align:center">'
+      + '<span style="font-size:36px;font-weight:700;letter-spacing:8px;color:#ffffff">' + code + '</span>'
+      + '</div><p style="color:#52525b;font-size:12px;margin:24px 0 0">Код действует 10 минут.</p></div>';
     await transporter.sendMail({
-      from: `"Zync Messenger" <${gmailUser}>`,
+      from: '"Zync Messenger" <' + gmailUser + '>',
       to,
       subject: 'Zync — код подтверждения',
-      html: `<div style="font-family:sans-serif;max-width:400px;margin:0 auto;padding:32px;background:#09090b;border-radius:16px;border:1px solid #27272a"><h2 style="color:#6366f1;margin:0 0 8px">Zync Messenger</h2><p style="color:#a1a1aa;margin:0 0 24px">Ваш код для входа:</p><div style="background:#18181b;border:2px solid #6366f1;border-radius:12px;padding:20px;text-align:center"><span style="font-size:36px;font-weight:700;letter-spacing:8px;color:#ffffff">${code}</span></div><p style="color:#52525b;font-size:12px;margin:24px 0 0">Код действует 10 минут. Не передавайте его никому.</p></div>`,
+      html,
     });
     console.log('✓ Email sent to ' + to + ' via Gmail');
-  } catch (err) {
-    console.error('Gmail send failed:', err);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('Gmail send failed:', msg);
+    console.log('[2FA FALLBACK] Code for ' + to + ': ' + code);
   }
 }
 
