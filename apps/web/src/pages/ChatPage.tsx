@@ -4,6 +4,7 @@ import { useChatStore } from '../stores/chatStore';
 import { useAuthStore } from '../stores/authStore';
 import { getSocket, disconnectSocket } from '../lib/socket';
 import { api } from '../lib/api';
+import { registerPushToken, listenForegroundPush } from '../lib/push';
 import { playNotificationSound, isChatMuted } from '../lib/sounds';
 import { useLang } from '../lib/i18n';
 import type { Message, UserBasic, CallInfo } from '../lib/types';
@@ -56,6 +57,13 @@ export default function ChatPage() {
     if (initialized.current) return;
     initialized.current = true;
     loadChats();
+
+    // Register push token
+    const token = localStorage.getItem('zync_token') || localStorage.getItem('vortex_token');
+    if (token && 'Notification' in window) {
+      registerPushToken(token).catch(() => {});
+      listenForegroundPush();
+    }
   }, [loadChats]);
 
   // Обработка закрытия вкладки — отправить disconnect

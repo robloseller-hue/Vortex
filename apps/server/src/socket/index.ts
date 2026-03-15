@@ -1,6 +1,7 @@
 import { Server, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../db';
+import { sendPush } from '../push';
 import { config } from '../config';
 import { SENDER_SELECT, deleteUploadedFile } from '../shared';
 
@@ -351,6 +352,35 @@ export function setupSocket(io: Server) {
           ...message,
           readBy: [{ userId }],
         });
+
+        // Push notifications for offline members
+        try {
+          const chat = await prisma.chat.findUnique({
+            where: { id: data.chatId },
+            include: { members: { select: { userId: true } } },
+          });
+          if (chat) {
+            const senderName = message.sender?.displayName || message.sender?.username || 'Кто-то';
+            const chatName = chat.name || senderName;
+            const msgText = message.content
+              ? (message.content.length > 80 ? message.content.slice(0, 80) + '...' : message.content)
+              : '📎 Вложение';
+            for (const member of chat.members) {
+              if (member.userId === userId) continue;
+              // Only push if offline
+              if (!onlineUsers.has(member.userId)) {
+                await sendPush(member.userId, {
+                  title: chatName,
+                  body: chat.type === 'personal' ? msgText : `${senderName}: ${msgText}`,
+                  tag: 'message',
+                  data: { chatId: data.chatId, type: 'message' },
+                });
+              }
+            }
+          }
+        } catch (pushErr) {
+          console.error('Push notification error:', pushErr);
+        }
       } catch (error) {
         console.error('Send message error:', error);
         socket.emit('error', { message: 'Ошибка отправки сообщения' });
@@ -730,6 +760,19 @@ export function setupSocket(io: Server) {
             chatId,
             callerInfo,
           });
+        }
+
+        // Push for call (works even if PWA is in background)
+        try {
+          const callerName = callerInfo?.displayName || callerInfo?.username || 'Неизвестный';
+          await sendPush(data.targetUserId, {
+            title: `📞 Входящий звонок`,
+            body: `${callerName} звонит вам`,
+            tag: 'call',
+            data: { type: 'call', from: userId, callType: data.callType, chatId: chatId || '' },
+          });
+        } catch (pushErr) {
+          console.error('Push call error:', pushErr);
         }
       } else {
         // Target is offline

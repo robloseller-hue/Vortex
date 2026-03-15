@@ -9,9 +9,7 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
-// Minimal fetch handler - required for Chrome to show install prompt
 self.addEventListener('fetch', e => {
-  // Only cache GET requests for static assets (not API/socket)
   const url = new URL(e.request.url);
   if (
     e.request.method !== 'GET' ||
@@ -20,16 +18,53 @@ self.addEventListener('fetch', e => {
     url.pathname.startsWith('/uploads/')
   ) return;
 
-  // For everything else - network first, cache fallback
   e.respondWith(
     fetch(e.request)
       .then(res => {
         if (res.ok && res.type === 'basic') {
-          const clone = res.clone();
-          caches.open(CACHE).then(c => c.put(e.request, clone));
+          caches.open(CACHE).then(c => c.put(e.request, res.clone()));
         }
         return res;
       })
       .catch(() => caches.match(e.request))
+  );
+});
+
+// Handle push notifications
+self.addEventListener('push', e => {
+  if (!e.data) return;
+  let payload;
+  try { payload = e.data.json(); } catch { return; }
+
+  e.waitUntil(
+    self.registration.showNotification(payload.title || 'Zync', {
+      body: payload.body || '',
+      icon: payload.icon || '/icon-192.png',
+      badge: payload.badge || '/icon-96.png',
+      tag: payload.tag || 'message',
+      renotify: true,
+      requireInteraction: payload.requireInteraction || false,
+      vibrate: payload.vibrate || [200],
+      actions: payload.actions || [],
+      data: payload.data || {},
+    })
+  );
+});
+
+// Handle notification click
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const data = e.notification.data || {};
+
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      const existing = list.find(c => c.url.includes(self.location.origin));
+      if (existing) {
+        existing.focus();
+        existing.postMessage({ type: 'NOTIFICATION_CLICK', action: e.action, data });
+      } else {
+        clients.openWindow('/');
+      }
+    })
   );
 });
