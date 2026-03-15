@@ -80,41 +80,47 @@ async function createSession(userId: string, token: string, ip: string, ua: stri
 
 // ── Send email ────────────────────────────────────────────────────────
 async function sendEmail(to: string, code: string): Promise<void> {
-  const gmailUser = process.env.GMAIL_USER;
-  const gmailPass = process.env.GMAIL_PASS;
-  if (!gmailUser || !gmailPass) {
-    console.warn('GMAIL_USER or GMAIL_PASS not set, skipping email');
+  const apiKey = process.env.ELASTIC_EMAIL_KEY;
+  const fromEmail = process.env.ELASTIC_EMAIL_FROM;
+
+  if (!apiKey || !fromEmail) {
+    console.warn('ELASTIC_EMAIL_KEY or ELASTIC_EMAIL_FROM not set');
     console.log('[2FA FALLBACK] Code for ' + to + ': ' + code);
     return;
   }
+
+  const html = '<div style="font-family:sans-serif;max-width:400px;margin:0 auto;padding:32px;background:#09090b;border-radius:16px;border:1px solid #27272a">'
+    + '<h2 style="color:#6366f1;margin:0 0 8px">Zync Messenger</h2>'
+    + '<p style="color:#a1a1aa;margin:0 0 24px">Ваш код для входа:</p>'
+    + '<div style="background:#18181b;border:2px solid #6366f1;border-radius:12px;padding:20px;text-align:center">'
+    + '<span style="font-size:36px;font-weight:700;letter-spacing:8px;color:#ffffff">' + code + '</span>'
+    + '</div><p style="color:#52525b;font-size:12px;margin:24px 0 0">Код действует 10 минут. Не передавайте его никому.</p></div>';
+
   try {
-    const nodemailer = await import('nodemailer');
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
-      requireTLS: true,
-      auth: { user: gmailUser, pass: gmailPass },
-      connectionTimeout: 15000,
-      greetingTimeout: 15000,
-      socketTimeout: 15000,
-    });
-    const html = '<div style="font-family:sans-serif;max-width:400px;margin:0 auto;padding:32px;background:#09090b;border-radius:16px;border:1px solid #27272a">'
-      + '<h2 style="color:#6366f1;margin:0 0 8px">Zync Messenger</h2>'
-      + '<p style="color:#a1a1aa;margin:0 0 24px">Ваш код для входа:</p>'
-      + '<div style="background:#18181b;border:2px solid #6366f1;border-radius:12px;padding:20px;text-align:center">'
-      + '<span style="font-size:36px;font-weight:700;letter-spacing:8px;color:#ffffff">' + code + '</span>'
-      + '</div><p style="color:#52525b;font-size:12px;margin:24px 0 0">Код действует 10 минут.</p></div>';
-    await transporter.sendMail({
-      from: '"Zync Messenger" <' + gmailUser + '>',
+    const params = new URLSearchParams({
+      apikey: apiKey,
+      from: fromEmail,
+      fromName: 'Zync Messenger',
       to,
       subject: 'Zync — код подтверждения',
-      html,
+      bodyHtml: html,
+      isTransactional: 'true',
     });
-    console.log('✓ Email sent to ' + to + ' via Gmail');
+    const res = await fetch('https://api.elasticemail.com/v2/email/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
+    });
+    const data = await res.json() as { success?: boolean; error?: string };
+    if (data.success) {
+      console.log('✓ Email sent to ' + to + ' via Elastic Email');
+    } else {
+      console.error('Elastic Email error:', data.error);
+      console.log('[2FA FALLBACK] Code for ' + to + ': ' + code);
+    }
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error('Gmail send failed:', msg);
+    console.error('Elastic Email failed:', msg);
     console.log('[2FA FALLBACK] Code for ' + to + ': ' + code);
   }
 }
