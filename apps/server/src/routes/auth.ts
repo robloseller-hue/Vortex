@@ -98,7 +98,7 @@ async function sendEmail(to: string, code: string): Promise<void> {
       subject: 'Zync — код подтверждения',
       html: `<div style="font-family:sans-serif;max-width:400px;margin:0 auto;padding:32px;background:#09090b;border-radius:16px;border:1px solid #27272a"><h2 style="color:#6366f1;margin:0 0 8px">Zync Messenger</h2><p style="color:#a1a1aa;margin:0 0 24px">Ваш код для входа:</p><div style="background:#18181b;border:2px solid #6366f1;border-radius:12px;padding:20px;text-align:center"><span style="font-size:36px;font-weight:700;letter-spacing:8px;color:#ffffff">${code}</span></div><p style="color:#52525b;font-size:12px;margin:24px 0 0">Код действует 10 минут. Не передавайте его никому.</p></div>`,
     });
-    console.log(\`✓ Email sent to \${to} via Gmail\`);
+    console.log('✓ Email sent to ' + to + ' via Gmail');
   } catch (err) {
     console.error('Gmail send failed:', err);
   }
