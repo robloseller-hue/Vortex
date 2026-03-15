@@ -80,44 +80,27 @@ async function createSession(userId: string, token: string, ip: string, ua: stri
 
 // ── Send email ────────────────────────────────────────────────────────
 async function sendEmail(to: string, code: string): Promise<void> {
-  // Always log code to Railway logs as backup
-  console.log(`\n╔══════════════════════════╗`);
-  console.log(`║  2FA CODE: ${code}`);
-  console.log(`║  FOR: ${to}`);
-  console.log(`╚══════════════════════════╝\n`);
-
-  const resendKey = process.env.RESEND_API_KEY;
-  if (!resendKey) {
-    console.warn('RESEND_API_KEY not set — email not sent, code is in logs above');
+  const gmailUser = process.env.GMAIL_USER;
+  const gmailPass = process.env.GMAIL_PASS;
+  if (!gmailUser || !gmailPass) {
+    console.warn('GMAIL_USER or GMAIL_PASS not set, skipping email');
     return;
   }
-
-  const html = `<div style="font-family:sans-serif;max-width:420px;margin:auto;background:#09090b;color:#fff;border-radius:16px;overflow:hidden"><div style="background:linear-gradient(135deg,#6366f1,#8b5cf6);padding:28px;text-align:center"><b style="font-size:28px">Zync</b></div><div style="padding:28px;text-align:center"><h2 style="margin:0 0 8px">Код подтверждения</h2><p style="color:#a1a1aa;margin:0 0 24px;font-size:14px">Действителен 10 минут</p><div style="background:#18181b;border:1px solid #3f3f46;border-radius:12px;padding:18px;margin-bottom:20px"><span style="font-size:38px;font-weight:900;letter-spacing:10px;color:#6366f1">${code}</span></div><p style="color:#52525b;font-size:12px">Если вы не запрашивали код — проигнорируйте это письмо.</p></div></div>`;
-
   try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 10000);
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        from: 'Zync Messenger <onboarding@resend.dev>',
-        to: [to],
-        subject: `Код входа Zync: ${code}`,
-        html,
-        text: `Ваш код входа в Zync: ${code}. Действителен 10 минут.`,
-      }),
-      signal: controller.signal,
+    const nodemailer = await import('nodemailer');
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user: gmailUser, pass: gmailPass },
     });
-    clearTimeout(timer);
-    if (!res.ok) {
-      const err = await res.text();
-      console.error('Resend API error:', err);
-    } else {
-      console.log(`✓ Email sent to ${to} via Resend`);
-    }
+    await transporter.sendMail({
+      from: `"Zync Messenger" <${gmailUser}>`,
+      to,
+      subject: 'Zync — код подтверждения',
+      html: `<div style="font-family:sans-serif;max-width:400px;margin:0 auto;padding:32px;background:#09090b;border-radius:16px;border:1px solid #27272a"><h2 style="color:#6366f1;margin:0 0 8px">Zync Messenger</h2><p style="color:#a1a1aa;margin:0 0 24px">Ваш код для входа:</p><div style="background:#18181b;border:2px solid #6366f1;border-radius:12px;padding:20px;text-align:center"><span style="font-size:36px;font-weight:700;letter-spacing:8px;color:#ffffff">${code}</span></div><p style="color:#52525b;font-size:12px;margin:24px 0 0">Код действует 10 минут. Не передавайте его никому.</p></div>`,
+    });
+    console.log(\`✓ Email sent to \${to} via Gmail\`);
   } catch (err) {
-    console.error('Resend fetch failed:', err);
+    console.error('Gmail send failed:', err);
   }
 }
 
