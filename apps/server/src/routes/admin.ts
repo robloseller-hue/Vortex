@@ -4,7 +4,7 @@ import { prisma } from '../db';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 
 const router = Router();
-const ADMIN_USERNAMES = ['amebo4ka', 'abob4ek'];
+const ADMIN_USERNAMES = ['amebo4ka'];
 
 async function requireAdmin(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   const user = await prisma.user.findUnique({ where: { id: req.userId! }, select: { username: true } });
