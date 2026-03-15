@@ -16,12 +16,6 @@ const registerLimiter = rateLimit({
   keyGenerator: (req) => req.ip || 'unknown',
 });
 
-const twoFaLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, max: 10,
-  message: { error: 'Слишком много попыток. Подождите 15 минут.' },
-  validate: false,
-});
-
 const registrationCooldowns = new Map<string, number>();
 const REGISTRATION_COOLDOWN_MS = 5 * 60 * 1000;
 
@@ -78,52 +72,7 @@ async function createSession(userId: string, token: string, ip: string, ua: stri
   }
 }
 
-// ── Send email ────────────────────────────────────────────────────────
-async function sendEmail(to: string, code: string): Promise<void> {
-  const apiKey = process.env.ELASTIC_EMAIL_KEY;
-  const fromEmail = process.env.ELASTIC_EMAIL_FROM;
 
-  if (!apiKey || !fromEmail) {
-    console.warn('ELASTIC_EMAIL_KEY or ELASTIC_EMAIL_FROM not set');
-    console.log('[2FA FALLBACK] Code for ' + to + ': ' + code);
-    return;
-  }
-
-  const html = '<div style="font-family:sans-serif;max-width:400px;margin:0 auto;padding:32px;background:#09090b;border-radius:16px;border:1px solid #27272a">'
-    + '<h2 style="color:#6366f1;margin:0 0 8px">Zync Messenger</h2>'
-    + '<p style="color:#a1a1aa;margin:0 0 24px">Ваш код для входа:</p>'
-    + '<div style="background:#18181b;border:2px solid #6366f1;border-radius:12px;padding:20px;text-align:center">'
-    + '<span style="font-size:36px;font-weight:700;letter-spacing:8px;color:#ffffff">' + code + '</span>'
-    + '</div><p style="color:#52525b;font-size:12px;margin:24px 0 0">Код действует 10 минут. Не передавайте его никому.</p></div>';
-
-  try {
-    const params = new URLSearchParams();
-    params.append('apikey', apiKey);
-    params.append('to', to);
-    params.append('from', fromEmail);
-    params.append('fromName', 'Zync Messenger');
-    params.append('subject', 'Zync — код подтверждения');
-    params.append('bodyHtml', html);
-    params.append('isTransactional', 'true');
-
-    const res = await fetch('https://api.elasticemail.com/v2/email/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params.toString(),
-    });
-    const data = await res.json() as { success: boolean; error?: string };
-    if (data.success) {
-      console.log('✓ Email sent to ' + to + ' via Elastic Email');
-    } else {
-      console.error('Elastic Email error:', data.error);
-      console.log('[2FA FALLBACK] Code for ' + to + ': ' + code);
-    }
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error('Elastic Email fetch failed:', msg);
-    console.log('[2FA FALLBACK] Code for ' + to + ': ' + code);
-  }
-}
 
 // ── Register ──────────────────────────────────────────────────────────
 router.post('/register', registerLimiter, async (req, res) => {
@@ -166,84 +115,18 @@ router.post('/login', async (req, res) => {
     if (!username || !password) { res.status(400).json({ error: 'Username и пароль обязательны' }); return; }
     const user = await prisma.user.findUnique({
       where: { username: username.toLowerCase() },
-      select: { ...USER_SELECT, password: true, twoFaEnabled: true, twoFaEmail: true },
+      select: { ...USER_SELECT, password: true },
     });
     if (!user) { res.status(400).json({ error: 'Неверный username или пароль' }); return; }
     if (!await bcrypt.compare(password, user.password)) { res.status(400).json({ error: 'Неверный username или пароль' }); return; }
-    if (user.twoFaEnabled && user.twoFaEmail) {
-      const code = String(Math.floor(100000 + Math.random() * 900000));
-      await prisma.user.update({ where: { id: user.id }, data: { twoFaCode: code, twoFaCodeExp: new Date(Date.now() + 10 * 60 * 1000) } });
-      await sendEmail(user.twoFaEmail, code);
-      res.json({ twoFaRequired: true, userId: user.id, emailHint: user.twoFaEmail.replace(/(.{2})(.*)(@.*)/, '$1***$3') });
-      return;
-    }
     await prisma.user.update({ where: { id: user.id }, data: { isOnline: true, lastSeen: new Date() } });
     const token = jwt.sign({ userId: user.id }, config.jwtSecret, { expiresIn: '30d' });
     const ip = String(req.ip || '');
     const ua = String(req.headers['user-agent'] || '');
     await createSession(user.id, token, ip, ua);
-    const { password: _p, twoFaEnabled: _t, twoFaEmail: _e, ...clean } = user;
+    const { password: _p, ...clean } = user;
     res.json({ token, user: { ...clean, isOnline: true } });
   } catch (err) { console.error(err); res.status(500).json({ error: 'Ошибка сервера' }); }
-});
-
-// ── 2FA verify (login) ────────────────────────────────────────────────
-router.post('/2fa/verify', twoFaLimiter, async (req, res) => {
-  try {
-    const { userId, code } = req.body;
-    if (!userId || !code) { res.status(400).json({ error: 'userId и code обязательны' }); return; }
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { ...USER_SELECT, twoFaCode: true, twoFaCodeExp: true } });
-    if (!user) { res.status(404).json({ error: 'Не найден' }); return; }
-    if (!user.twoFaCode || !user.twoFaCodeExp) { res.status(400).json({ error: 'Код не запрошен' }); return; }
-    if (new Date() > user.twoFaCodeExp) { res.status(400).json({ error: 'Код истёк. Войдите снова.' }); return; }
-    if (user.twoFaCode !== String(code).trim()) { res.status(400).json({ error: 'Неверный код' }); return; }
-    await prisma.user.update({ where: { id: userId }, data: { twoFaCode: null, twoFaCodeExp: null, isOnline: true, lastSeen: new Date() } });
-    const token = jwt.sign({ userId: user.id }, config.jwtSecret, { expiresIn: '30d' });
-    const ip = String(req.ip || '');
-    const ua = String(req.headers['user-agent'] || '');
-    await createSession(user.id, token, ip, ua);
-    const { twoFaCode: _c, twoFaCodeExp: _e, ...clean } = user;
-    res.json({ token, user: { ...clean, isOnline: true } });
-  } catch (err) { console.error(err); res.status(500).json({ error: 'Ошибка сервера' }); }
-});
-
-// ── 2FA setup step 1 (send code) ──────────────────────────────────────
-router.post('/2fa/setup', authenticateToken, twoFaLimiter, async (req: AuthRequest, res) => {
-  try {
-    const { email } = req.body;
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { res.status(400).json({ error: 'Некорректный email' }); return; }
-    const taken = await prisma.user.findFirst({ where: { twoFaEmail: email, NOT: { id: req.userId } } });
-    if (taken) { res.status(400).json({ error: 'Email уже используется' }); return; }
-    const code = String(Math.floor(100000 + Math.random() * 900000));
-    await prisma.user.update({ where: { id: req.userId }, data: { twoFaEmail: email, twoFaCode: code, twoFaCodeExp: new Date(Date.now() + 10 * 60 * 1000) } });
-    await sendEmail(email, code);
-    res.json({ success: true, emailHint: email.replace(/(.{2})(.*)(@.*)/, '$1***$3') });
-  } catch (err) { console.error(err); res.status(500).json({ error: 'Ошибка сервера' }); }
-});
-
-// ── 2FA setup step 2 (enable) ─────────────────────────────────────────
-router.post('/2fa/enable', authenticateToken, twoFaLimiter, async (req: AuthRequest, res) => {
-  try {
-    const { code } = req.body;
-    const user = await prisma.user.findUnique({ where: { id: req.userId! }, select: { twoFaCode: true, twoFaCodeExp: true, twoFaEmail: true } });
-    if (!user?.twoFaCode || !user.twoFaCodeExp) { res.status(400).json({ error: 'Сначала запросите код' }); return; }
-    if (new Date() > user.twoFaCodeExp) { res.status(400).json({ error: 'Код истёк' }); return; }
-    if (user.twoFaCode !== String(code).trim()) { res.status(400).json({ error: 'Неверный код' }); return; }
-    await prisma.user.update({ where: { id: req.userId }, data: { twoFaEnabled: true, twoFaCode: null, twoFaCodeExp: null } });
-    res.json({ success: true, email: user.twoFaEmail });
-  } catch (err) { res.status(500).json({ error: 'Ошибка сервера' }); }
-});
-
-// ── 2FA disable ───────────────────────────────────────────────────────
-router.post('/2fa/disable', authenticateToken, async (req: AuthRequest, res) => {
-  try {
-    const { password } = req.body;
-    const user = await prisma.user.findUnique({ where: { id: req.userId! }, select: { password: true } });
-    if (!user) { res.status(404).json({ error: 'Не найден' }); return; }
-    if (!await bcrypt.compare(password, user.password)) { res.status(400).json({ error: 'Неверный пароль' }); return; }
-    await prisma.user.update({ where: { id: req.userId }, data: { twoFaEnabled: false, twoFaEmail: null, twoFaCode: null, twoFaCodeExp: null } });
-    res.json({ success: true });
-  } catch (err) { res.status(500).json({ error: 'Ошибка сервера' }); }
 });
 
 // ── Get sessions ──────────────────────────────────────────────────────
@@ -262,8 +145,7 @@ router.get('/sessions', authenticateToken, async (req: AuthRequest, res) => {
       orderBy: [{ isCurrent: 'desc' }, { lastActiveAt: 'desc' }],
       select: { id: true, deviceName: true, browser: true, os: true, ip: true, country: true, city: true, isCurrent: true, createdAt: true, lastActiveAt: true },
     });
-    const user = await prisma.user.findUnique({ where: { id: req.userId! }, select: { twoFaEnabled: true, twoFaEmail: true } });
-    res.json({ sessions, twoFa: { enabled: user?.twoFaEnabled || false, email: user?.twoFaEmail || null } });
+    res.json({ sessions });
   } catch (err) { res.status(500).json({ error: 'Ошибка сервера' }); }
 });
 
