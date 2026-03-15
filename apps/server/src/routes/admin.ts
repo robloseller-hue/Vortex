@@ -105,9 +105,33 @@ router.delete('/users/:id', authenticateToken, requireAdmin, async (req: Request
     const target = await prisma.user.findUnique({ where: { id }, select: { username: true } });
     if (!target) { res.status(404).json({ error: 'Пользователь не найден' }); return; }
     if (ADMIN_USERNAMES.includes(target.username)) { res.status(400).json({ error: 'Нельзя удалить администратора' }); return; }
+
+    // Delete sessions (no cascade in schema)
+    await prisma.session.deleteMany({ where: { userId: id } });
+
+    // Delete personal chats of this user (cascades messages/members)
+    const personalChats = await prisma.chat.findMany({
+      where: { type: 'personal', members: { some: { userId: id } } },
+      select: { id: true },
+    });
+    if (personalChats.length > 0) {
+      await prisma.chat.deleteMany({ where: { id: { in: personalChats.map(c => c.id) } } });
+    }
+
+    // Remove from group chats
+    await prisma.chatMember.deleteMany({ where: { userId: id } });
+
+    // Delete messages in group chats
+    await prisma.message.deleteMany({ where: { senderId: id } });
+
+    // Delete user (remaining relations cascade)
     await prisma.user.delete({ where: { id } });
+
     res.json({ success: true });
-  } catch { res.status(500).json({ error: 'Ошибка сервера' }); }
+  } catch (err) {
+    console.error('Delete user error:', err);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
 });
 
 // ── Messages ───────────────────────────────────────────────────────────
