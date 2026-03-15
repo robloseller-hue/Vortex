@@ -34,6 +34,10 @@ model User {
   storyViews  StoryView[]
   friendshipsSent     Friendship[] @relation("FriendshipsSent")
   friendshipsReceived Friendship[] @relation("FriendshipsReceived")
+  blocksSent          Block[]      @relation("BlocksSent")
+  blocksReceived      Block[]      @relation("BlocksReceived")
+  pushTokens          PushToken[]
+  sessions            Session[]
 }
 
 model Chat {
@@ -207,6 +211,23 @@ model Block {
   blocked User @relation("BlocksReceived", fields: [blockedId], references: [id], onDelete: Cascade)
 
   @@unique([blockerId, blockedId])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  token        String   @unique
+  deviceName   String?
+  browser      String?
+  os           String?
+  ip           String?
+  country      String?
+  city         String?
+  isCurrent    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  lastActiveAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model PushToken {
