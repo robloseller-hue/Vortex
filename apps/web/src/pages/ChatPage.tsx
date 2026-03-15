@@ -74,8 +74,16 @@ export default function ChatPage() {
   }, []);
 
   useEffect(() => {
-    const socket = getSocket();
-    if (!socket) return;
+    const EVENTS = ['new_message','scheduled_delivered','message_edited','message_deleted',
+      'messages_deleted','messages_hidden','reaction_added','reaction_removed','messages_read',
+      'user_typing','user_stopped_typing','user_online','user_offline','message_pinned',
+      'message_unpinned','call_incoming'];
+
+    function attachListeners() {
+      const socket = getSocket();
+      if (!socket) return;
+      // Remove duplicates first
+      EVENTS.forEach(e => socket.off(e));
 
     socket.on('new_message', async (message: Message) => {
       // If this chat isn't in our store yet (e.g. someone just created it and sent a message),
@@ -211,23 +219,29 @@ export default function ChatPage() {
       setCallOpen(true);
     });
 
+
+    }
+
+    // Attach immediately if socket exists, or wait for connect event
+    const socket = getSocket();
+    if (socket) {
+      attachListeners();
+    } else {
+      // Will be attached when socket connects
+    }
+
+    // Also re-attach on reconnect
+    const s = getSocket();
+    if (s) {
+      s.on('connect', attachListeners);
+    }
+
     return () => {
-      socket.off('new_message');
-      socket.off('scheduled_delivered');
-      socket.off('message_edited');
-      socket.off('message_deleted');
-      socket.off('messages_deleted');
-      socket.off('messages_hidden');
-      socket.off('reaction_added');
-      socket.off('reaction_removed');
-      socket.off('messages_read');
-      socket.off('user_typing');
-      socket.off('user_stopped_typing');
-      socket.off('user_online');
-      socket.off('user_offline');
-      socket.off('message_pinned');
-      socket.off('message_unpinned');
-      socket.off('call_incoming');
+      const socket = getSocket();
+      if (socket) {
+        EVENTS.forEach(e => socket.off(e));
+        socket.off('connect', attachListeners);
+      }
     };
   }, [user?.id]);
 

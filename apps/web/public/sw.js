@@ -1,68 +1,14 @@
-const CACHE_NAME = 'zync-v1';
+// Minimal service worker - required for PWA install, no aggressive caching
+const CACHE_NAME = 'zync-v2';
 
-// Assets to cache on install
-const PRECACHE = [
-  '/',
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png',
-];
-
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(PRECACHE))
-  );
-  self.skipWaiting();
-});
-
-self.addEventListener('activate', (event) => {
-  // Remove old caches
-  event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    )
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', (e) => {
+  // Clear all old caches
+  e.waitUntil(
+    caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))))
   );
   self.clients.claim();
 });
 
-self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
-
-  // Never cache API, socket, or uploads — always go to network
-  if (
-    url.pathname.startsWith('/api/') ||
-    url.pathname.startsWith('/socket.io') ||
-    url.pathname.startsWith('/uploads/') ||
-    event.request.method !== 'GET'
-  ) {
-    return;
-  }
-
-  // For navigation requests (HTML pages) — network first, fallback to cache
-  if (event.request.mode === 'navigate') {
-    event.respondWith(
-      fetch(event.request)
-        .then(res => {
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then(c => c.put(event.request, clone));
-          return res;
-        })
-        .catch(() => caches.match('/'))
-    );
-    return;
-  }
-
-  // For static assets — cache first, then network
-  event.respondWith(
-    caches.match(event.request).then(cached => {
-      if (cached) return cached;
-      return fetch(event.request).then(res => {
-        if (res.ok) {
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then(c => c.put(event.request, clone));
-        }
-        return res;
-      });
-    })
-  );
-});
+// No fetch interception - all requests go directly to network
+// This prevents double requests and cache-related lag

@@ -111,6 +111,7 @@ function findVideoSender(pc: RTCPeerConnection): RTCRtpSender | undefined {
 export default function CallModal({ isOpen, onClose, targetUser, callType: initialCallType, incoming }: CallModalProps) {
   const { t } = useLang();
   const [callState, setCallState] = useState<CallState>('idle');
+  const [isAccepting, setIsAccepting] = useState(false);
   const [callType, setCallType] = useState<'voice' | 'video'>(initialCallType);
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
@@ -253,26 +254,9 @@ export default function CallModal({ isOpen, onClose, targetUser, callType: initi
         remoteVideoRef.current.srcObject = stream;
         remoteVideoRef.current.play().catch(() => {});
       }
-      // Always attach stream to audio element for reliable audio playback
       if (remoteAudioRef.current) {
         remoteAudioRef.current.srcObject = stream;
-        const playAudio = () => {
-          remoteAudioRef.current?.play().catch(err => {
-            console.warn('[audio] autoplay blocked, retrying:', err);
-            // Retry on user interaction
-            const retry = () => {
-              remoteAudioRef.current?.play().catch(() => {});
-              document.removeEventListener('click', retry);
-              document.removeEventListener('keydown', retry);
-            };
-            document.addEventListener('click', retry, { once: true });
-            document.addEventListener('keydown', retry, { once: true });
-          });
-        };
-        playAudio();
-        // Also retry after short delays in case stream isn't ready
-        setTimeout(playAudio, 300);
-        setTimeout(playAudio, 1000);
+        remoteAudioRef.current.play().catch(() => {});
       }
 
       // Track future additions/removals
@@ -403,7 +387,8 @@ export default function CallModal({ isOpen, onClose, targetUser, callType: initi
 
   // Accept incoming call
   const acceptCall = useCallback(async () => {
-    if (!incoming) return;
+    if (!incoming || isAccepting) return;
+    setIsAccepting(true);
     targetUserIdRef.current = incoming.from;
     callEndedRef.current = false;
     stopCallRingtone();
@@ -520,6 +505,7 @@ export default function CallModal({ isOpen, onClose, targetUser, callType: initi
       timerRef.current = setInterval(() => setDuration((d) => d + 1), 1000);
     } catch (err: any) {
       console.error('Error accepting call:', err);
+      setIsAccepting(false);
       if (err?.name === 'NotAllowedError' || err?.name === 'NotFoundError') {
         alert('Разрешите доступ к микрофону в настройках браузера для совершения звонков');
       }
@@ -528,7 +514,7 @@ export default function CallModal({ isOpen, onClose, targetUser, callType: initi
         cleanup();
       }
     }
-  }, [incoming, cleanup, setupPeerHandlers]);
+  }, [incoming, isAccepting, cleanup, setupPeerHandlers]);
 
   // Decline incoming call
   const declineCall = useCallback(() => {
@@ -1688,9 +1674,13 @@ export default function CallModal({ isOpen, onClose, targetUser, callType: initi
                 <div className="w-8" />
                 <button
                   onClick={acceptCall}
-                  className="w-16 h-16 rounded-full bg-emerald-500 hover:bg-emerald-600 flex items-center justify-center text-white shadow-xl shadow-emerald-500/30 transition-all hover:scale-105 animate-pulse"
+                  disabled={isAccepting}
+                  className={`w-16 h-16 rounded-full bg-emerald-500 hover:bg-emerald-600 flex items-center justify-center text-white shadow-xl shadow-emerald-500/30 transition-all ${isAccepting ? 'opacity-70 cursor-wait' : 'hover:scale-105 animate-pulse'}`}
                 >
-                  {callType === 'video' ? <Video size={24} /> : <Phone size={24} className="animate-bounce" />}
+                  {isAccepting
+                    ? <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    : callType === 'video' ? <Video size={24} /> : <Phone size={24} className="animate-bounce" />
+                  }
                 </button>
               </>
             )}
