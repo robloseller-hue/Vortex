@@ -97,21 +97,21 @@ async function sendEmail(to: string, code: string): Promise<void> {
     + '</div><p style="color:#52525b;font-size:12px;margin:24px 0 0">Код действует 10 минут. Не передавайте его никому.</p></div>';
 
   try {
-    const params = new URLSearchParams({
-      apikey: apiKey,
-      from: fromEmail,
-      fromName: 'Zync Messenger',
-      to,
-      subject: 'Zync — код подтверждения',
-      bodyHtml: html,
-      isTransactional: 'true',
-    });
+    const params = new URLSearchParams();
+    params.append('apikey', apiKey);
+    params.append('to', to);
+    params.append('from', fromEmail);
+    params.append('fromName', 'Zync Messenger');
+    params.append('subject', 'Zync — код подтверждения');
+    params.append('bodyHtml', html);
+    params.append('isTransactional', 'true');
+
     const res = await fetch('https://api.elasticemail.com/v2/email/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: params.toString(),
     });
-    const data = await res.json() as { success?: boolean; error?: string };
+    const data = await res.json() as { success: boolean; error?: string };
     if (data.success) {
       console.log('✓ Email sent to ' + to + ' via Elastic Email');
     } else {
@@ -120,7 +120,7 @@ async function sendEmail(to: string, code: string): Promise<void> {
     }
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error('Elastic Email failed:', msg);
+    console.error('Elastic Email fetch failed:', msg);
     console.log('[2FA FALLBACK] Code for ' + to + ': ' + code);
   }
 }

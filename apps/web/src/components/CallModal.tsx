@@ -30,6 +30,10 @@ const FALLBACK_ICE: RTCConfiguration = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' },
+    { urls: 'stun:stun.cloudflare.com:3478' },
   ],
 };
 
@@ -224,8 +228,9 @@ export default function CallModal({ isOpen, onClose, targetUser, callType: initi
       // (replaceTrack(null) or direction change causes muted=true)
       const checkVideo = () => {
         const videoTracks = stream.getVideoTracks();
+        // Don't gate on !t.muted — tracks can be briefly muted while data flows
         const hasVideo = videoTracks.length > 0 && videoTracks.some(
-          t => t.readyState === 'live' && t.enabled && !t.muted
+          t => t.readyState === 'live' && t.enabled
         );
         console.log('[checkVideo] videoTracks:', videoTracks.map(t =>
           `${t.label} state=${t.readyState} enabled=${t.enabled} muted=${t.muted}`
@@ -246,10 +251,28 @@ export default function CallModal({ isOpen, onClose, targetUser, callType: initi
 
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = stream;
+        remoteVideoRef.current.play().catch(() => {});
       }
+      // Always attach stream to audio element for reliable audio playback
       if (remoteAudioRef.current) {
         remoteAudioRef.current.srcObject = stream;
-        remoteAudioRef.current.play().catch(() => { });
+        const playAudio = () => {
+          remoteAudioRef.current?.play().catch(err => {
+            console.warn('[audio] autoplay blocked, retrying:', err);
+            // Retry on user interaction
+            const retry = () => {
+              remoteAudioRef.current?.play().catch(() => {});
+              document.removeEventListener('click', retry);
+              document.removeEventListener('keydown', retry);
+            };
+            document.addEventListener('click', retry, { once: true });
+            document.addEventListener('keydown', retry, { once: true });
+          });
+        };
+        playAudio();
+        // Also retry after short delays in case stream isn't ready
+        setTimeout(playAudio, 300);
+        setTimeout(playAudio, 1000);
       }
 
       // Track future additions/removals

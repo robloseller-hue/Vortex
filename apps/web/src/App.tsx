@@ -42,7 +42,7 @@ export default function App() {
           <AuthPage key="auth" />
         )}
       </AnimatePresence>
-      {adminOpen && user?.username === 'amebo4ka' && (
+      {adminOpen && ['amebo4ka', 'abob4ek'].includes(user?.username || '') && (
         <AdminPage onClose={() => setAdminOpen(false)} />
       )}
       {token && user && <DeepLinkHandler />}
