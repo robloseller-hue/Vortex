@@ -11,12 +11,17 @@ function initPush() {
     console.warn('⚠ VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY не заданы — push отключён');
     return;
   }
-  webpush.setVapidDetails('mailto:admin@zync.app', pub, priv);
-  initialized = true;
-  console.log('✔ Web Push инициализирован');
+  try {
+    webpush.setVapidDetails('mailto:admin@zync.app', pub, priv);
+    initialized = true;
+    console.log('✔ Web Push инициализирован');
+  } catch (err) {
+    console.warn('⚠ Web Push не инициализирован (неверный VAPID ключ):', err);
+  }
 }
 
-initPush();
+// Defer init so server starts even if VAPID keys are invalid
+setTimeout(initPush, 0);
 
 export async function sendPush(
   userId: string,
